@@ -1,0 +1,7 @@
+.env
+bin/
+data/
+themes/
+plugins/
+*.log
+*.tmp

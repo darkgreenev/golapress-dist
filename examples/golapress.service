@@ -1,0 +1,16 @@
+[Unit]
+Description=goLaPress CMS
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/golapress
+EnvironmentFile=/opt/golapress/.env
+ExecStart=/opt/golapress/bin/golapress
+Restart=on-failure
+RestartSec=5
+User=golapress
+Group=golapress
+
+[Install]
+WantedBy=multi-user.target
