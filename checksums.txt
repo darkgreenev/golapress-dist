@@ -1,1 +1,3 @@
-# Populated automatically by the private goLaPress release workflow.
+3a370af76526dd5ff71c195c29b41b2ab2e235f7fd38fbd20b59a12468a6fe5f  golapress-linux-amd64.tar.gz
+2e603de0b9ba9e2c93bfb233d91c2632a415a50f05a3adf3bbe4876b2d48744d  golapress-linux-arm64.tar.gz
+973f1e7ba7e1b2cb171622a635075506849f78e8f27f22df64e91bac8411fdf1  golapress-windows-amd64.zip
