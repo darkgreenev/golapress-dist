@@ -1,0 +1,32 @@
+FROM ubuntu:22.04
+
+# Avoid interactive prompts during build
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies: MySQL, Git, Curl, CA-Certificates, and Tar
+RUN apt-get update && apt-get install -y \
+    mysql-server \
+    git \
+    curl \
+    ca-certificates \
+    tar \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy the entrypoint script
+COPY scripts/trial-entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Default environment variables for the trial
+ENV MYSQL_DATABASE=golapress_trial
+ENV MYSQL_USER=golapress
+ENV MYSQL_PASSWORD=golapress
+ENV ADMIN_PASSWORD=admin12345
+ENV APP_PORT=8076
+
+# Expose the application port
+EXPOSE 8076
+
+# Set the entrypoint
+ENTRYPOINT ["entrypoint.sh"]
