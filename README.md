@@ -49,35 +49,32 @@ Start with Compose:
 docker compose up --build
 ```
 
-Compose stores SQLite data and uploaded media in the `golapress_data` named volume.
+Compose stores SQLite data, uploaded media, installed themes, and installed plugins in named volumes.
 
-### Self-Contained Docker Trial (One Command)
+### Pre-built Binary Variants (No Go Install Required)
 
-For a quick trial with MySQL and the latest release binary in a single, self-contained container:
+For a quick start using the latest released binary:
 
-```bash
-./trial.sh
-```
+- **Standalone (Standard):** `./scripts/run-standard.sh` (or `make docker-standard`). This uses local `./data`, `./themes`, and `./plugins` folders on your host.
+- **All-in-One (withData):** `./scripts/run-with-data.sh` (or `make docker-with-data`). This includes a MySQL database inside the container.
 
-(Or `make docker-trial` if you have `make` installed).
-
-This method:
-1. Builds a Docker image based on Ubuntu.
-2. Installs and starts a local MySQL service inside the container.
-3. Automatically fetches the latest `golapress` binary from the [distribution repo](https://github.com/darkgreenev/golapress-dist).
-4. Configures the database and admin account automatically.
-
-No host-level dependencies (other than Docker) are required.
+These methods:
+1. Automatically fetch the latest `golapress` binary from the [distribution repo](https://github.com/darkgreenev/golapress-dist).
+2. Configure the admin account automatically.
+3. No host-level dependencies (other than Docker) are required.
 
 ## Development Commands
 
 ```bash
-make run        # start local dev server
-make test       # run Go tests
-make test-mysql # run MySQL integration test through Docker Compose
-make build      # build bin/golapress
-make docker-up  # start with Docker Compose
-make docker-dev # start Compose with local data/themes/plugins bind mounts
+make run            # start local dev server
+make test           # run Go tests
+make test-mysql     # run MySQL integration test through Docker Compose
+make build          # build bin/golapress
+go run ./cmd/golapress snapshot-site # create an ignored DB backup under APP_SITE_DIR/backups
+make docker-up      # start with Docker Compose
+make docker-dev     # start Compose with local data/themes/plugins bind mounts
+make docker-standard # run standard binary variant with host data volume
+make docker-with-data # run all-in-one binary variant with MySQL
 make docker-down
 ```
 
@@ -94,12 +91,16 @@ This uses `compose.dev.yaml` on top of the default Compose file.
 The main environment variables are:
 
 - `APP_URL`: public origin, default `http://localhost:8076`
+- `APP_SITE_DIR`: path to the site directory containing `data/`, `themes/`, and `plugins/`, default `./my-site`
+- `APP_SITE_GIT_INIT`: automatically run `git init` at the site directory if it is not already a repo, default `true`
+- `APP_HOST`: listen host, default `0.0.0.0` (all interfaces)
 - `APP_PORT`: listen port, default `8076`
 - `SMTP_RELAY_URL`, `SMTP_RELAY_TOKEN`: outbound email relay settings for future password-reset mail delivery
 - `DB_DRIVER`: `sqlite` or `mysql`, default `sqlite`
-- `DB_DSN`: SQLite or MySQL DSN, default `file:./data/golapress.db?_foreign_keys=on`
+- `DB_DSN`: SQLite or MySQL DSN, default `file:./my-site/data/golapress.db?_foreign_keys=on`
 - `MEDIA_DIR`: uploaded media directory
 - `PLUGINS_DIR`: trusted local plugin manifest directory
+- `THEMES_DIR`: local installed theme directory
 - `APP_DEV_RELOAD_ENABLED`: enables the development-only admin reload action when `APP_ENV=development`
 - `ENABLED_PLUGINS`: comma-separated startup-enabled plugin IDs
 - `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_DISPLAY_NAME`
@@ -133,7 +134,7 @@ The current delivery path is intentionally SQLite-first and single-node. Public 
 Current plugin behavior:
 
 - a folder under `plugins/*/plugin.json` makes a plugin discoverable in admin/API surfaces
-- a plugin only becomes activatable when the binary includes a matching trusted runtime implementation
+- a plugin becomes activatable when it has either a compiled-in trusted runtime implementation or a valid external executable declared in `plugin.json`
 - this is not yet a public ABI or marketplace installation model
 
 Recommended database posture:
