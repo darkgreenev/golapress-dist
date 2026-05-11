@@ -57,11 +57,13 @@ For a quick start using the latest released binary:
 
 - **Standalone (Standard):** `./scripts/run-standard.sh` (or `make docker-standard`). This uses local `./data`, `./themes`, and `./plugins` folders on your host.
 - **All-in-One (withData):** `./scripts/run-with-data.sh` (or `make docker-with-data`). This includes a MySQL database inside the container.
+- **VPS install without Docker:** `./scripts/install-vps.sh --site-dir /var/www/golapress --db-dsn 'user:pass@tcp(127.0.0.1:3306)/golapress?parseTime=true&charset=utf8mb4,utf8'`. See [docs/vps_binary_install.md](docs/vps_binary_install.md).
 
 These methods:
 1. Automatically fetch the latest `golapress` binary from the [distribution repo](https://github.com/darkgreenev/golapress-dist).
 2. Configure the admin account automatically.
-3. No host-level dependencies (other than Docker) are required.
+3. Avoid a local Go toolchain.
+4. The VPS installer uses `systemd` when available and falls back to a managed background process when it is not.
 
 ## Development Commands
 
