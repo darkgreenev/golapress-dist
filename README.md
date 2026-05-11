@@ -93,6 +93,7 @@ The main environment variables are:
 - `APP_URL`: public origin, default `http://localhost:8076`
 - `APP_SITE_DIR`: path to the site directory containing `data/`, `themes/`, and `plugins/`, default `./my-site`
 - `APP_SITE_GIT_INIT`: automatically run `git init` at the site directory if it is not already a repo, default `true`
+- `APP_UPDATE_LATEST_URL`: release metadata URL used by the admin self-updater
 - `APP_HOST`: listen host, default `0.0.0.0` (all interfaces)
 - `APP_PORT`: listen port, default `8076`
 - `SMTP_RELAY_URL`, `SMTP_RELAY_TOKEN`: outbound email relay settings for future password-reset mail delivery
