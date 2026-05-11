@@ -23,7 +23,7 @@ ENV APP_PORT=8076
 ENV APP_SITE_DIR=/app
 ENV APP_SITE_GIT_INIT=true
 ENV DB_DRIVER=mysql
-ENV DB_DSN=golapress:golapress@tcp(host.docker.internal:3306)/golapress?parseTime=true
+ENV DB_DSN=golapress:golapress@tcp(host.docker.internal:3306)/golapress?parseTime=true&charset=utf8mb4,utf8
 
 # Expose the application port
 EXPOSE 8076

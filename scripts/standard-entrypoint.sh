@@ -38,14 +38,22 @@ echo "Configuring environment..."
 cd /app
 
 # Set database driver and DSN from environment or defaults
-sed -i "s|DB_DRIVER=sqlite|DB_DRIVER=${DB_DRIVER:-mysql}|" .env
-sed -i "s|DB_DSN=file:./data/golapress.db?_foreign_keys=on|DB_DSN=${DB_DSN:-golapress:golapress@tcp(host.docker.internal:3306)/golapress?parseTime=true}|" .env
+APP_HOST=${APP_HOST:-0.0.0.0}
+DB_DRIVER=${DB_DRIVER:-mysql}
+DB_DSN=${DB_DSN:-golapress:golapress@tcp(host.docker.internal:3306)/golapress?parseTime=true&charset=utf8mb4,utf8}
+
+sed -i -E "s|^DB_DRIVER=.*|DB_DRIVER=${DB_DRIVER}|" .env
+sed -i -E "s|^DB_DSN=.*|DB_DSN=${DB_DSN//&/\\&}|" .env
 
 if ! grep -q "APP_HOST=" .env; then
-    echo "APP_HOST=${APP_HOST:-0.0.0.0}" >> .env
+    echo "APP_HOST=${APP_HOST}" >> .env
 else
-    sed -i "s|APP_HOST=.*|APP_HOST=${APP_HOST:-0.0.0.0}|" .env
+    sed -i "s|APP_HOST=.*|APP_HOST=${APP_HOST}|" .env
 fi
+
+export APP_HOST
+export DB_DRIVER
+export DB_DSN
 
 # Run the application
 echo "Starting goLaPress..."

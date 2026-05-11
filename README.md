@@ -1,6 +1,6 @@
 # goLaPress
 
-goLaPress is a focused CMS written in Go. It uses a WordPress-familiar content model and admin flow while keeping the runtime narrow: server-rendered admin screens, SQLite-first local persistence, native Go services, bounded hooks, trusted plugins, and template-based themes.
+goLaPress is a focused CMS written in Go. It uses a WordPress-familiar content model and admin flow while keeping the runtime narrow: server-rendered admin screens, MySQL-first production persistence, native Go services, bounded hooks, trusted plugins, and template-based themes.
 
 ## Quick Start
 
@@ -49,7 +49,7 @@ Start with Compose:
 docker compose up --build
 ```
 
-Compose stores SQLite data, uploaded media, installed themes, and installed plugins in named volumes.
+Compose starts MySQL by default and stores database data, uploaded media, installed themes, and installed plugins in named volumes.
 
 ### Pre-built Binary Variants (No Go Install Required)
 
@@ -96,8 +96,8 @@ The main environment variables are:
 - `APP_HOST`: listen host, default `0.0.0.0` (all interfaces)
 - `APP_PORT`: listen port, default `8076`
 - `SMTP_RELAY_URL`, `SMTP_RELAY_TOKEN`: outbound email relay settings for future password-reset mail delivery
-- `DB_DRIVER`: `sqlite` or `mysql`, default `sqlite`
-- `DB_DSN`: SQLite or MySQL DSN, default `file:./my-site/data/golapress.db?_foreign_keys=on`
+- `DB_DRIVER`: `mysql` or `sqlite`, default `mysql`
+- `DB_DSN`: MySQL or SQLite DSN, default `golapress:golapress@tcp(127.0.0.1:3306)/golapress?parseTime=true&charset=utf8mb4,utf8`
 - `MEDIA_DIR`: uploaded media directory
 - `PLUGINS_DIR`: trusted local plugin manifest directory
 - `THEMES_DIR`: local installed theme directory
@@ -118,7 +118,7 @@ See [.env.example](.env.example) for the current template.
 - active theme selection, native theme zip upload/install, and bundled default theme rendering
 - trusted plugin discovery, persisted enable/disable actions, and built-in activity-log plus SEO plugins
 - bounded hook bus with public theme-render plus content/media lifecycle events
-- SQLite-first bootstrap migrations plus fresh MySQL install support covered by `make test-mysql`
+- MySQL-first bootstrap migrations plus explicit SQLite support for local development and small installs
 
 ## Project Docs
 
@@ -129,7 +129,7 @@ See [.env.example](.env.example) for the current template.
 
 ## Scope Limits
 
-The current delivery path is intentionally SQLite-first and single-node. Public plugin marketplaces, arbitrary third-party runtime loading, broad WordPress compatibility, and production Postgres automation are not part of the current slice.
+The current delivery path is intentionally MySQL-first for production and distribution installs. SQLite remains supported for local development, tests, and small explicit installs. Public plugin marketplaces, arbitrary third-party runtime loading, broad WordPress compatibility, and production Postgres automation are not part of the current slice.
 
 Current plugin behavior:
 
@@ -140,5 +140,5 @@ Current plugin behavior:
 Recommended database posture:
 
 - use SQLite for local development, evaluations, internal tools, and single-node production deployments with disciplined backups
-- choose MySQL at install time when you need an external database or a production posture that exceeds filesystem-level SQLite backup and restore workflows
+- use MySQL for production and distribution installs
 - treat SQLite-to-MySQL migration as maintenance tooling; `golapress migrate-store --dry-run` validates source/target readiness, and `--confirm` copies known database tables into an empty MySQL target before a manual operator cutover; successful migration writes completed runtime metadata and still requires an explicit `DB_DRIVER=mysql` cutover
