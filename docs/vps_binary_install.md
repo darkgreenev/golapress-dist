@@ -267,7 +267,7 @@ MySQL backups require `mysqldump` to be installed.
 
 The AI Assistant in goLaPress wraps the Codex CLI. On a no-Docker VPS, use the `local` runtime.
 
-OpenAI's Codex CLI documentation says the CLI can be installed with `npm install -g @openai/codex`, and the ChatGPT sign-in flow can be started with `codex --login`. goLaPress can also pass a saved OpenAI API key to Codex as `OPENAI_API_KEY` when it launches a session.
+OpenAI's Codex CLI documentation says the CLI can be installed with `npm install -g @openai/codex`, and current releases use `codex login` for the ChatGPT sign-in flow. goLaPress can also pass a saved OpenAI API key to Codex as `OPENAI_API_KEY` when it launches a session.
 
 References:
 
@@ -369,7 +369,7 @@ The assistant is ready when all of these are true:
 - `CODEX_AI_ENABLED=true`
 - `CODEX_RUNTIME=local` or `auto`
 - `codex` is on `PATH` for the goLaPress process user
-- the OpenAI API key is saved in admin settings or available in the environment
+- the OpenAI API key is saved in admin settings or available in the environment, or Codex CLI is already logged in for the goLaPress OS user
 
 If the admin screen says:
 
