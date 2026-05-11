@@ -20,8 +20,10 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 # Default environment variables
 ENV APP_HOST=0.0.0.0
 ENV APP_PORT=8076
+ENV APP_ENV=production
 ENV APP_SITE_DIR=/app
 ENV APP_SITE_GIT_INIT=true
+ENV APP_DEV_RELOAD_ENABLED=false
 ENV DB_DRIVER=mysql
 ENV DB_DSN=golapress:golapress@tcp(host.docker.internal:3306)/golapress?parseTime=true&charset=utf8mb4,utf8
 
