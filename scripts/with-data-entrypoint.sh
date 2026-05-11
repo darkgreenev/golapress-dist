@@ -62,8 +62,8 @@ cp "$EXTRACTED_DIR/.env.example" /app/.env
 # Final configuration of .env
 echo "Configuring environment..."
 cd /app
-sed -i "s|DB_DRIVER=sqlite|DB_DRIVER=${DB_DRIVER}|" .env
-sed -i -E "s|DB_DSN=file:\\./([^[:space:]]*/)?data/golapress\\.db\\?_foreign_keys=on|DB_DSN=${DB_DSN//&/\\&}|" .env
+sed -i -E "s|^DB_DRIVER=.*|DB_DRIVER=${DB_DRIVER}|" .env
+sed -i -E "s|^DB_DSN=.*|DB_DSN=${DB_DSN//&/\\&}|" .env
 sed -i "s|ADMIN_PASSWORD=change-me-in-real-deployments|ADMIN_PASSWORD=${ADMIN_PASSWORD}|" .env
 if ! grep -q "APP_HOST=" .env; then
     echo "APP_HOST=${APP_HOST}" >> .env
