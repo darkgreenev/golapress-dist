@@ -1,7 +1,7 @@
 {
-  "version": "v0.1.9",
-  "linux_amd64": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.9/golapress-linux-amd64.tar.gz",
-  "linux_arm64": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.9/golapress-linux-arm64.tar.gz",
-  "windows_amd64": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.9/golapress-windows-amd64.zip",
-  "checksums": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.9/checksums.txt"
+  "version": "v0.1.10",
+  "linux_amd64": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.10/golapress-linux-amd64.tar.gz",
+  "linux_arm64": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.10/golapress-linux-arm64.tar.gz",
+  "windows_amd64": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.10/golapress-windows-amd64.zip",
+  "checksums": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.10/checksums.txt"
 }
