@@ -28,6 +28,14 @@ Open:
 - health: `http://localhost:8076/healthz`
 - readiness: `http://localhost:8076/readyz`
 
+## Public Docs
+
+The public documentation site is published from the `docs/` folder:
+
+- `https://darkgreenev.github.io/golapress-dist/`
+
+It includes the public install, AI, API, hook, plugin, and theme guides that ship with this distribution repo.
+
 Default local admin login for `scripts/dev.sh`:
 
 - email: `admin@example.com`
