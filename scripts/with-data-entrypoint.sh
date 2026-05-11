@@ -20,6 +20,9 @@ MYSQL_DATABASE=${MYSQL_DATABASE:-golapress_trial}
 MYSQL_USER=${MYSQL_USER:-golapress}
 MYSQL_PASSWORD=${MYSQL_PASSWORD:-golapress}
 ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin12345}
+APP_HOST=${APP_HOST:-0.0.0.0}
+DB_DRIVER=${DB_DRIVER:-mysql}
+DB_DSN=${DB_DSN:-${MYSQL_USER}:${MYSQL_PASSWORD}@tcp(127.0.0.1:3306)/${MYSQL_DATABASE}?parseTime=true&charset=utf8mb4,utf8}
 
 echo "Initializing MySQL database and user..."
 mysql -e "CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;"
@@ -59,14 +62,19 @@ cp "$EXTRACTED_DIR/.env.example" /app/.env
 # Final configuration of .env
 echo "Configuring environment..."
 cd /app
-sed -i "s|DB_DRIVER=sqlite|DB_DRIVER=mysql|" .env
-sed -i "s|DB_DSN=file:./data/golapress.db?_foreign_keys=on|DB_DSN=${MYSQL_USER}:${MYSQL_PASSWORD}@tcp(127.0.0.1:3306)/${MYSQL_DATABASE}?parseTime=true\&charset=utf8mb4,utf8|" .env
+sed -i "s|DB_DRIVER=sqlite|DB_DRIVER=${DB_DRIVER}|" .env
+sed -i -E "s|DB_DSN=file:\\./([^[:space:]]*/)?data/golapress\\.db\\?_foreign_keys=on|DB_DSN=${DB_DSN//&/\\&}|" .env
 sed -i "s|ADMIN_PASSWORD=change-me-in-real-deployments|ADMIN_PASSWORD=${ADMIN_PASSWORD}|" .env
 if ! grep -q "APP_HOST=" .env; then
-    echo "APP_HOST=${APP_HOST:-0.0.0.0}" >> .env
+    echo "APP_HOST=${APP_HOST}" >> .env
 else
-    sed -i "s|APP_HOST=.*|APP_HOST=${APP_HOST:-0.0.0.0}|" .env
+    sed -i "s|APP_HOST=.*|APP_HOST=${APP_HOST}|" .env
 fi
+
+export DB_DRIVER
+export DB_DSN
+export ADMIN_PASSWORD
+export APP_HOST
 
 # Run the application
 echo "Starting goLaPress Trial..."
