@@ -66,6 +66,40 @@ write_env_file() {
   mv "$tmp" "$file"
 }
 
+stop_existing_background_process() {
+  pid_file="$1"
+  if [ ! -f "$pid_file" ]; then
+    return
+  fi
+
+  pid="$(cat "$pid_file" 2>/dev/null || true)"
+  if [ -z "$pid" ]; then
+    rm -f "$pid_file"
+    return
+  fi
+
+  if ! kill -0 "$pid" 2>/dev/null; then
+    rm -f "$pid_file"
+    return
+  fi
+
+  echo "Stopping existing goLaPress process: $pid"
+  kill "$pid" 2>/dev/null || true
+
+  waited=0
+  while kill -0 "$pid" 2>/dev/null; do
+    if [ "$waited" -ge 15 ]; then
+      echo "Existing goLaPress process did not exit after 15s; sending SIGKILL to $pid"
+      kill -KILL "$pid" 2>/dev/null || true
+      break
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+
+  rm -f "$pid_file"
+}
+
 sql_string_quote() {
   printf "'%s'" "$(printf '%s' "$1" | sed "s/'/''/g")"
 }
@@ -426,6 +460,7 @@ EOF
   echo "Status: systemctl status $service_name"
 else
   run_script="$site_dir/run-golapress.sh"
+  pid_file="$site_dir/data/golapress.pid"
   cat > "$run_script" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
@@ -439,9 +474,10 @@ exec "$install_dir/$binary_name"
 EOF
   chmod 0755 "$run_script"
 
+  stop_existing_background_process "$pid_file"
   nohup "$run_script" > "$site_dir/data/golapress.log" 2>&1 &
   pid=$!
-  echo "$pid" > "$site_dir/data/golapress.pid"
+  echo "$pid" > "$pid_file"
 
   echo "Started goLaPress without systemd."
   echo "Site directory: $site_dir"

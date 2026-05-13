@@ -196,6 +196,8 @@ kill $(cat /var/www/golapress/data/golapress.pid)
 /var/www/golapress/run-golapress.sh
 ```
 
+Rerunning the installer in this fallback mode now reads `data/golapress.pid`, sends `SIGTERM` to the existing process, waits up to 15 seconds for a clean exit, and only uses `SIGKILL` as a last resort before starting the new copy. This avoids stacking multiple app instances across reinstall or upgrade runs.
+
 For long-term production, prefer a real process supervisor such as `systemd`, `supervisord`, or the VPS provider's service manager.
 
 If the app sits behind a reverse proxy, enable `APP_TRUSTED_PROXY_HEADERS=true` only when the proxy is trusted and controlled by you, and set `APP_TRUSTED_PROXY_CIDRS` to the proxy IPs/CIDRs that are allowed to send `X-Forwarded-For` or `X-Real-IP`. For a same-host proxy, `127.0.0.1/32,::1/128` is the usual starting point.
