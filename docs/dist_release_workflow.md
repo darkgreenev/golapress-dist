@@ -32,6 +32,48 @@ With that layout, run the sync command from the private repo like this:
 
 This keeps the private source repo and the public distribution repo separate while making sync commands simple and predictable.
 
+## Local Binary Output Convention
+
+When building binaries from the private `golapress` checkout, use these locations consistently:
+
+- local runnable contributor build: `dist/local/golapress`
+- public release payloads: `dist/release/`
+
+Do not leave ad hoc binaries in the repository root such as:
+
+```text
+./golapress
+```
+
+That makes it unclear which binary is current and which one was used for release work.
+
+Recommended commands:
+
+For a local manual binary build:
+
+```bash
+mkdir -p dist/local
+go build -trimpath -o dist/local/golapress ./cmd/golapress
+```
+
+For public release artifacts:
+
+```bash
+./scripts/build-dist.sh vX.Y.Z
+```
+
+That writes the release archives and metadata under:
+
+```text
+dist/release/
+```
+
+Current release workflow assumes:
+
+- archives are built in `golapress/dist/release/`
+- `latest.json` and `checksums.txt` are copied from `golapress/dist/release/` into the sibling `golapress-dist/` checkout
+- GitHub release uploads use the archives directly from `golapress/dist/release/`
+
 ## What Lives In golapress-dist
 
 `golapress-dist` is expected to carry two kinds of public distribution material:
@@ -115,6 +157,8 @@ It produces:
 - `checksums.txt`
 - `latest.json`
 
+The script does not write to the repository root. Release artifacts are expected to stay under `dist/release/`.
+
 The generated `latest.json` points to GitHub release asset URLs in `golapress-dist`, using the supplied version string.
 
 ## When A Dist Repo Commit Is Enough
@@ -196,9 +240,10 @@ For an application release:
 ./scripts/build-dist.sh vX.Y.Z
 ```
 
-4. publish a `golapress-dist` GitHub release using the generated archives and `checksums.txt`
-5. ensure `latest.json` in `golapress-dist` points at that release version
-6. commit and push any tracked dist repo file updates
+4. copy `dist/release/latest.json` and `dist/release/checksums.txt` into the sibling `golapress-dist/` checkout
+5. publish a `golapress-dist` GitHub release using the generated archives and `checksums.txt` from `dist/release/`
+6. ensure `latest.json` in `golapress-dist` points at that release version
+7. commit and push any tracked dist repo file updates
 
 ## VPS Installer Specific Rule
 

@@ -56,6 +56,16 @@ upsert_env_file_value() {
   fi
 }
 
+write_env_file() {
+  file="$1"
+  content="$2"
+  mkdir -p "$(dirname "$file")"
+  tmp="${file}.tmp"
+  printf '%s' "$content" > "$tmp"
+  chmod 0600 "$tmp" 2>/dev/null || true
+  mv "$tmp" "$file"
+}
+
 sql_string_quote() {
   printf "'%s'" "$(printf '%s' "$1" | sed "s/'/''/g")"
 }
@@ -323,10 +333,8 @@ mkdir -p "$site_dir/data"
 if [ -z "$db_dsn" ] && [ "$db_driver" = "sqlite" ]; then
   db_dsn="file:$site_dir/data/golapress.db?_foreign_keys=on"
 fi
-if [ -f "$site_dir/.env" ]; then
-  cp "$site_dir/.env" "$site_dir/.env.bak.$(date +%Y%m%d%H%M%S)"
-fi
-cat > "$site_dir/.env" <<EOF
+rm -f "$site_dir"/.env.bak.*
+write_env_file "$site_dir/.env.example" "$(cat <<EOF
 APP_NAME='goLaPress'
 APP_ENV='production'
 PATH=$(shell_quote "$path_env")
@@ -335,12 +343,39 @@ APP_HOST=$(shell_quote "$app_host")
 APP_PORT=$(shell_quote "$app_port")
 APP_SITE_DIR=$(shell_quote "$site_dir")
 APP_SITE_GIT_INIT=true
+APP_UPDATE_LATEST_URL='https://raw.githubusercontent.com/darkgreenev/golapress-dist/main/latest.json'
 DB_DRIVER=$(shell_quote "$db_driver")
-DB_DSN=$(shell_quote "$db_dsn")
 ADMIN_EMAIL=$(shell_quote "$admin_email")
-ADMIN_PASSWORD=$(shell_quote "$admin_password")
 ADMIN_DISPLAY_NAME=$(shell_quote "$admin_display_name")
+SESSION_COOKIE_NAME='golapress_session'
+SESSION_TTL='24h'
+# Keep real secrets in data/runtime.env. Do not commit that file.
+DB_DSN='change-me-in-data-runtime-env'
+ADMIN_PASSWORD='change-me-in-data-runtime-env'
 EOF
+)"
+write_env_file "$site_dir/.env" "$(cat <<EOF
+APP_NAME='goLaPress'
+APP_ENV='production'
+PATH=$(shell_quote "$path_env")
+APP_URL=$(shell_quote "$app_url")
+APP_HOST=$(shell_quote "$app_host")
+APP_PORT=$(shell_quote "$app_port")
+APP_SITE_DIR=$(shell_quote "$site_dir")
+APP_SITE_GIT_INIT=true
+APP_UPDATE_LATEST_URL='https://raw.githubusercontent.com/darkgreenev/golapress-dist/main/latest.json'
+DB_DRIVER=$(shell_quote "$db_driver")
+ADMIN_EMAIL=$(shell_quote "$admin_email")
+ADMIN_DISPLAY_NAME=$(shell_quote "$admin_display_name")
+SESSION_COOKIE_NAME='golapress_session'
+SESSION_TTL='24h'
+EOF
+)"
+write_env_file "$site_dir/data/runtime.env" "$(cat <<EOF
+DB_DSN=$(shell_quote "$db_dsn")
+ADMIN_PASSWORD=$(shell_quote "$admin_password")
+EOF
+)"
 
 admin_env="$site_dir/data/admin.env"
 upsert_env_file_value "$admin_env" "CODEX_AI_ENABLED" "$codex_enabled"
@@ -372,6 +407,7 @@ Wants=network-online.target
 Type=simple
 WorkingDirectory=$site_dir
 EnvironmentFile=$site_dir/.env
+EnvironmentFile=-$site_dir/data/runtime.env
 ExecStart=$install_dir/$binary_name
 Restart=always
 RestartSec=5
@@ -395,6 +431,9 @@ else
 set -euo pipefail
 set -a
 . "$site_dir/.env"
+if [ -f "$site_dir/data/runtime.env" ]; then
+  . "$site_dir/data/runtime.env"
+fi
 set +a
 exec "$install_dir/$binary_name"
 EOF

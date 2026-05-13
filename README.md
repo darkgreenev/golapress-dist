@@ -28,14 +28,6 @@ Open:
 - health: `http://localhost:8076/healthz`
 - readiness: `http://localhost:8076/readyz`
 
-## Public Docs
-
-The public documentation site is published from the `docs/` folder:
-
-- `https://darkgreenev.github.io/golapress-dist/`
-
-It includes the public install, AI, API, hook, plugin, and theme guides that ship with this distribution repo.
-
 Default local admin login for `scripts/dev.sh`:
 
 - email: `admin@example.com`
@@ -113,6 +105,8 @@ The main environment variables are:
 - `PLUGINS_DIR`: trusted local plugin manifest directory
 - `THEMES_DIR`: local installed theme directory
 - `APP_DEV_RELOAD_ENABLED`: enables the development-only admin reload action when `APP_ENV=development`
+- `APP_TRUSTED_PROXY_HEADERS`: enable forwarded client IP header handling, default `false`
+- `APP_TRUSTED_PROXY_CIDRS`: comma-separated trusted reverse proxy IPs/CIDRs; forwarded client IP headers are ignored unless the immediate peer matches one of these entries
 - `ENABLED_PLUGINS`: comma-separated startup-enabled plugin IDs
 - `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_DISPLAY_NAME`
 - `SESSION_COOKIE_NAME`, `SESSION_TTL`
@@ -128,6 +122,7 @@ See [.env.example](.env.example) for the current template.
 - admin/editor auth with session cookies and policy helpers
 - active theme selection, native theme zip upload/install, and bundled default theme rendering
 - trusted plugin discovery, persisted enable/disable actions, and built-in activity-log plus SEO plugins
+- security audit log screen for login/logout/password events
 - bounded hook bus with public theme-render plus content/media lifecycle events
 - MySQL-first bootstrap migrations plus explicit SQLite support for local development and small installs
 

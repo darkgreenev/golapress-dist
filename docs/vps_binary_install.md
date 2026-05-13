@@ -21,7 +21,9 @@ The script:
 - downloads the latest Linux release binary from `golapress-dist`
 - installs the binary, defaulting to `/usr/local/bin/golapress` for root installs and `$HOME/.local/bin/golapress` for non-root installs
 - creates the site directory with `data/`, `themes/`, and `plugins/`
-- writes a site `.env` file used by the service launcher
+- writes a safe site `.env.example` template with placeholder secret values
+- writes a site `.env` file for non-secret launcher settings
+- writes real secrets such as `DB_DSN` and `ADMIN_PASSWORD` to `data/runtime.env`
 - writes Codex admin defaults to `data/admin.env`
 - starts goLaPress with MySQL by default
 - can provision a MySQL database and application user when explicitly requested
@@ -171,9 +173,10 @@ The service reads its runtime environment from:
 
 ```text
 /var/www/golapress/.env
+/var/www/golapress/data/runtime.env
 ```
 
-Rerunning the installer rewrites `.env` from the supplied flags and keeps a timestamped backup beside it.
+Rerunning the installer rewrites `.env` and `data/runtime.env` atomically from the supplied flags. It does not create timestamped `.env.bak.*` copies, and it removes legacy `.env.bak.*` files left by older installer runs.
 
 ## No systemd Fallback
 
@@ -195,15 +198,19 @@ kill $(cat /var/www/golapress/data/golapress.pid)
 
 For long-term production, prefer a real process supervisor such as `systemd`, `supervisord`, or the VPS provider's service manager.
 
+If the app sits behind a reverse proxy, enable `APP_TRUSTED_PROXY_HEADERS=true` only when the proxy is trusted and controlled by you, and set `APP_TRUSTED_PROXY_CIDRS` to the proxy IPs/CIDRs that are allowed to send `X-Forwarded-For` or `X-Real-IP`. For a same-host proxy, `127.0.0.1/32,::1/128` is the usual starting point.
+
 ## Site Directory Layout
 
 The site directory is intentionally separate from the binary:
 
 ```text
 /var/www/golapress/
+  .env.example
   .env
   data/
     admin.env
+    runtime.env
     media/
     golapress.db
     golapress.log
@@ -213,6 +220,8 @@ The site directory is intentionally separate from the binary:
 ```
 
 The binary can be upgraded without replacing site content, themes, uploads, or plugins.
+
+For Git-managed site directories, commit `.env.example` if you want a safe operator template, but keep `.env`, `data/runtime.env`, and `data/admin.env` ignored.
 
 ## Upgrades
 
