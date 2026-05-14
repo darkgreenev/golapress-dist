@@ -7,7 +7,7 @@ goLaPress is a focused CMS written in Go. It uses a WordPress-familiar content m
 Prerequisites:
 
 - Go 1.21 or newer
-- SQLite-compatible local filesystem access
+- local filesystem access
 
 Start the app:
 
@@ -19,6 +19,13 @@ or:
 
 ```bash
 ./scripts/dev.sh
+```
+
+Explicit local database modes:
+
+```bash
+make run-sqlite
+make run-mysql
 ```
 
 Open:
@@ -34,6 +41,14 @@ Default local admin login for `scripts/dev.sh`:
 - password: `admin12345`
 
 Set `ADMIN_PASSWORD` before using any shared or remote environment.
+
+Local dev database behavior:
+
+- `./scripts/dev.sh` loads `.env` as defaults when that file exists.
+- already-exported shell variables still win over `.env`.
+- if neither the shell nor `.env` sets `DB_DRIVER`, the script falls back to SQLite.
+- this repo's local `.env` may point at MySQL, so `make run` is not guaranteed to mean SQLite.
+- use `make run-sqlite` or `make run-mysql` when you want an explicit local mode.
 
 ## Docker
 
@@ -68,7 +83,9 @@ These methods:
 ## Development Commands
 
 ```bash
-make run            # start local dev server
+make run            # start local dev server using exported vars or .env defaults
+make run-sqlite     # force local SQLite dev mode
+make run-mysql      # force local MySQL dev mode
 make test           # run Go tests
 make test-mysql     # run MySQL integration test through Docker Compose
 make build          # build bin/golapress
@@ -99,8 +116,8 @@ The main environment variables are:
 - `APP_HOST`: listen host, default `0.0.0.0` (all interfaces)
 - `APP_PORT`: listen port, default `8076`
 - `SMTP_RELAY_URL`, `SMTP_RELAY_TOKEN`: outbound email relay settings for future password-reset mail delivery
-- `DB_DRIVER`: `mysql` or `sqlite`, default `mysql`
-- `DB_DSN`: MySQL or SQLite DSN, default `golapress:golapress@tcp(127.0.0.1:3306)/golapress?parseTime=true&charset=utf8mb4,utf8`
+- `DB_DRIVER`: `mysql` or `sqlite`; contributor `scripts/dev.sh` falls back to `sqlite` only when neither the shell nor `.env` sets it
+- `DB_DSN`: MySQL or SQLite DSN; contributor `scripts/dev.sh` falls back to `file:./my-site/data/golapress.db?_foreign_keys=on` only when neither the shell nor `.env` sets it
 - `MEDIA_DIR`: uploaded media directory
 - `PLUGINS_DIR`: trusted local plugin manifest directory
 - `THEMES_DIR`: local installed theme directory
@@ -129,6 +146,7 @@ See [.env.example](.env.example) for the current template.
 ## Project Docs
 
 - [docs/](docs/) contains architecture and strategy notes.
+- [docs/local_mysql_dev.md](docs/local_mysql_dev.md) covers the explicit local MySQL contributor workflow.
 - [todos/](todos/) contains genuinely open implementation follow-ups.
 - [workdone/](workdone/) contains completed implementation records moved out of the active todo queue.
 - [deployments/README.md](deployments/README.md) covers the current deployment path.
