@@ -49,6 +49,8 @@ Local dev database behavior:
 - if neither the shell nor `.env` sets `DB_DRIVER`, the script falls back to SQLite.
 - this repo's local `.env` may point at MySQL, so `make run` is not guaranteed to mean SQLite.
 - use `make run-sqlite` or `make run-mysql` when you want an explicit local mode.
+- changing `APP_PORT` or `APP_URL` does not create a new site; keep `APP_SITE_DIR=./my-site` unless you intentionally want a separate isolated site with its own database, themes, plugins, and uploads.
+- use a different `APP_SITE_DIR` only for deliberate isolation, such as a throwaway local experiment or a parallel test environment.
 
 ## Docker
 

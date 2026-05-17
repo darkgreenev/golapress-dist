@@ -276,10 +276,13 @@ Those changes do not automatically require a new binary release unless the conta
 ## Admin Updater Relationship
 
 Released binary installs expose `Tools > Updates` in the admin UI.
+Source-checkout development runs keep the page for diagnostics, but the update and rollback actions are disabled there so the source tree is not mistaken for an installed release binary.
 
 That updater checks `APP_UPDATE_LATEST_URL`, downloads the archive referenced by `latest.json`, verifies it against `checksums.txt`, and replaces the current binary.
 
 That means the release process is not only for first-time installs. It also drives in-place binary updates for existing installs.
+
+Source-checkout development runs do not use this updater flow. In development/source builds, the Updates screen may still show binary diagnostics, but install and rollback actions are disabled because a repo/dev executable should be rebuilt or restarted from source instead of self-updated from release archives.
 
 ## Operational Notes
 

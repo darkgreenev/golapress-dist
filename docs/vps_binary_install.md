@@ -50,6 +50,44 @@ The default admin email is `admin@example.com`. Override it with:
   --admin-password 'use-a-long-random-password'
 ```
 
+## Using .env With install-vps.sh
+
+`install-vps.sh` now auto-loads a `.env` file from the current working directory when one is present.
+
+That is useful when you do not want to repeat a long install command every time.
+
+Example operator `.env`:
+
+```bash
+APP_SITE_DIR=/var/www/golapress
+APP_URL=http://www.everlive.net:8076
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=adminpass
+DB_DRIVER=mysql
+DB_DSN='golapress:mypass@tcp(127.0.0.1:3306)/golapress?parseTime=true&charset=utf8mb4,utf8'
+CODEX_AI_ENABLED=true
+CODEX_RUNTIME=local
+```
+
+Then run:
+
+```bash
+./scripts/install-vps.sh
+```
+
+Configuration precedence is:
+
+1. explicit command-line flags
+2. exported shell environment variables
+3. `.env` in the current working directory
+4. built-in script defaults
+
+So if you keep most values in `.env`, you can still override one-off values with flags:
+
+```bash
+./scripts/install-vps.sh --app-url https://example.com
+```
+
 ## MySQL Default
 
 MySQL is the default database for this installer.
