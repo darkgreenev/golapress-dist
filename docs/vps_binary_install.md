@@ -20,6 +20,7 @@ The script:
 - downloads the latest Linux release binary from `golapress-dist` metadata
 - can ask interactive setup questions when you run it without flags in a terminal
 - installs the binary, defaulting to `/usr/local/bin/golapress` for root installs and `$HOME/.local/bin/golapress` for non-root installs
+- defaults the site directory to `./golapress-site` under the current working directory unless you override `--site-dir`
 - creates the site directory with `data/`, `themes/`, and `plugins/`
 - writes a safe site `.env.example` template with placeholder secret values
 - writes a site `.env` file for non-secret launcher settings
@@ -183,6 +184,8 @@ Example:
 ```
 
 In that mode, the installer runs `CREATE DATABASE`, `CREATE USER`, `ALTER USER`, `GRANT`, and `FLUSH PRIVILEGES`.
+
+The MySQL admin connection now uses TCP when `--mysql-root-host` is set. The default root host is `127.0.0.1`, not `localhost`, to avoid Unix socket permission failures during non-root installer runs.
 
 If you do not pass `--db-dsn`, the installer also builds the goLaPress DSN automatically from the created app user, password, and database name.
 

@@ -314,6 +314,7 @@ mysql_run() {
   local cmd=(mysql "--user=$mysql_root_user" "--port=$mysql_root_port" "--execute=$sql")
   if [ -n "$mysql_root_host" ]; then
     cmd+=("--host=$mysql_root_host")
+    cmd+=("--protocol=TCP")
   fi
   if [ -n "$mysql_root_password" ]; then
     cmd+=("--password=$mysql_root_password")
@@ -395,7 +396,7 @@ provision_mysql() {
 
 load_dotenv ".env"
 
-site_dir="${APP_SITE_DIR:-$HOME/golapress-site}"
+site_dir="${APP_SITE_DIR:-$PWD/golapress-site}"
 if [ -n "${GOLAPRESS_INSTALL_DIR:-}" ]; then
   install_dir="$GOLAPRESS_INSTALL_DIR"
 elif [ "$(id -u)" -eq 0 ]; then
@@ -425,7 +426,7 @@ install_codex_requested=0
 mysql_create_db=0
 mysql_root_user="${MYSQL_ROOT_USER:-root}"
 mysql_root_password="${MYSQL_ROOT_PASSWORD:-}"
-mysql_root_host="${MYSQL_ROOT_HOST:-localhost}"
+mysql_root_host="${MYSQL_ROOT_HOST:-127.0.0.1}"
 mysql_root_port="${MYSQL_ROOT_PORT:-3306}"
 mysql_app_host="${MYSQL_APP_HOST:-127.0.0.1}"
 mysql_db_name="${MYSQL_DB_NAME:-}"
