@@ -179,6 +179,41 @@ prompt_choice() {
   printf '%s' "$current"
 }
 
+port_from_app_url() {
+  local raw="$1"
+  local hostport=""
+  local host=""
+  local port=""
+
+  raw="${raw#*://}"
+  hostport="${raw%%/*}"
+  hostport="${hostport##*@}"
+
+  if [ -z "$hostport" ]; then
+    return 1
+  fi
+
+  if [[ "$hostport" == \[*\]*:* ]]; then
+    port="${hostport##*]:}"
+  elif [[ "$hostport" == *:* ]]; then
+    host="${hostport%%:*}"
+    port="${hostport##*:}"
+    if [ "$host" = "$port" ]; then
+      return 1
+    fi
+  else
+    return 1
+  fi
+
+  case "$port" in
+    ''|*[!0-9]*)
+      return 1
+      ;;
+  esac
+
+  printf '%s' "$port"
+}
+
 run_interactive_setup() {
   print_prompt_line ""
   print_prompt_line "goLaPress interactive install"
@@ -186,6 +221,10 @@ run_interactive_setup() {
 
   site_dir="$(prompt_value "Site directory" "$site_dir")"
   app_url="$(prompt_value "App URL" "$app_url")"
+  derived_app_port="$(port_from_app_url "$app_url" || true)"
+  if [ -n "$derived_app_port" ]; then
+    app_port="$derived_app_port"
+  fi
   admin_email="$(prompt_value "Admin email" "$admin_email")"
   admin_display_name="$(prompt_value "Admin display name" "$admin_display_name")"
   admin_password="$(prompt_secret "Admin password" "$admin_password")"

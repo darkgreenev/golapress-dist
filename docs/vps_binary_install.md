@@ -19,6 +19,7 @@ The script:
 - is shipped as a versioned release asset in `golapress-dist`
 - downloads the latest Linux release binary from `golapress-dist` metadata
 - can ask interactive setup questions when you run it without flags in a terminal
+- derives `APP_PORT` from the port in the interactive `App URL` when one is present
 - installs the binary, defaulting to `/usr/local/bin/golapress` for root installs and `$HOME/.local/bin/golapress` for non-root installs
 - defaults the site directory to `./golapress-site` under the current working directory unless you override `--site-dir`
 - creates the site directory with `data/`, `themes/`, and `plugins/`
