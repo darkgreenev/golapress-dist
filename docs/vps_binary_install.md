@@ -8,22 +8,17 @@ Use this path when you have a VPS or bare Linux server and do not want Docker.
 
 ## What The Installer Does
 
-Run:
+Run the interactive installer:
 
 ```bash
-curl -fsSL -o install-vps.sh https://github.com/darkgreenev/golapress-dist/releases/latest/download/install-vps.sh
-chmod +x install-vps.sh
-./install-vps.sh \
-  --site-dir /var/www/golapress \
-  --app-url https://example.com \
-  --admin-password 'use-a-long-random-password' \
-  --db-dsn 'golapress:change-me@tcp(127.0.0.1:3306)/golapress?parseTime=true&charset=utf8mb4,utf8'
+bash <(curl -fsSL https://github.com/darkgreenev/golapress-dist/releases/latest/download/install-vps.sh)
 ```
 
 The script:
 
 - is shipped as a versioned release asset in `golapress-dist`
 - downloads the latest Linux release binary from `golapress-dist` metadata
+- can ask interactive setup questions when you run it without flags in a terminal
 - installs the binary, defaulting to `/usr/local/bin/golapress` for root installs and `$HOME/.local/bin/golapress` for non-root installs
 - creates the site directory with `data/`, `themes/`, and `plugins/`
 - writes a safe site `.env.example` template with placeholder secret values
@@ -39,6 +34,23 @@ The script:
 
 Supported Linux release architectures are `linux_amd64` and `linux_arm64`.
 
+If you prefer to save a copy locally first and still avoid `chmod`:
+
+```bash
+curl -fsSL -o install-vps.sh https://github.com/darkgreenev/golapress-dist/releases/latest/download/install-vps.sh
+bash install-vps.sh
+```
+
+For non-interactive installs with explicit flags:
+
+```bash
+bash install-vps.sh \
+  --site-dir /var/www/golapress \
+  --app-url https://example.com \
+  --admin-password 'use-a-long-random-password' \
+  --db-dsn 'golapress:change-me@tcp(127.0.0.1:3306)/golapress?parseTime=true&charset=utf8mb4,utf8'
+```
+
 ## Required Inputs
 
 Set these values for a real VPS:
@@ -51,7 +63,7 @@ Set these values for a real VPS:
 The default admin email is `admin@example.com`. Override it with:
 
 ```bash
-./install-vps.sh \
+bash install-vps.sh \
   --admin-email owner@example.com \
   --admin-password 'use-a-long-random-password'
 ```
@@ -78,7 +90,7 @@ CODEX_RUNTIME=local
 Then run:
 
 ```bash
-./install-vps.sh
+bash install-vps.sh
 ```
 
 Configuration precedence is:
@@ -91,7 +103,7 @@ Configuration precedence is:
 So if you keep most values in `.env`, you can still override one-off values with flags:
 
 ```bash
-./install-vps.sh --app-url https://example.com
+bash install-vps.sh --app-url https://example.com
 ```
 
 ## MySQL Default

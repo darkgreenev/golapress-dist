@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/install-vps.sh [--site-dir PATH] [--install-dir PATH] [--app-url URL] [--db-dsn DSN] [--db-driver mysql|sqlite] [--runtime local|docker|auto] [--fallback-mode background|loop]
+Usage: ./scripts/install-vps.sh [--site-dir PATH] [--install-dir PATH] [--app-url URL] [--db-dsn DSN] [--db-driver mysql|sqlite] [--runtime local|docker|auto] [--fallback-mode background|loop] [--interactive]
 
 Installs goLaPress on a VPS without Docker by downloading the latest release
 binary from golapress-dist release metadata, preparing a site directory, and either:
@@ -20,8 +20,13 @@ This means flags always win, and .env is a convenient default layer.
 Optional features:
   - provision a MySQL database/user on an existing MySQL server
   - install Node.js/npm and @openai/codex for local Codex runtime
+  - interactive setup wizard when run without flags in a terminal
 
 Examples:
+  bash ./scripts/install-vps.sh
+
+  bash <(curl -fsSL https://github.com/darkgreenev/golapress-dist/releases/latest/download/install-vps.sh)
+
   ./scripts/install-vps.sh \
     --site-dir /var/www/golapress \
     --app-url https://example.com
@@ -45,6 +50,186 @@ Examples:
     --runtime local \
     --install-codex
 EOF
+}
+
+prompt_fd=0
+prompt_tty_fd=""
+
+setup_prompt_io() {
+  if [ -t 0 ] && [ -t 1 ]; then
+    prompt_fd=0
+    return 0
+  fi
+  if [ -r /dev/tty ]; then
+    exec 3<>/dev/tty
+    prompt_fd=3
+    prompt_tty_fd=3
+    return 0
+  fi
+  return 1
+}
+
+close_prompt_io() {
+  if [ -n "$prompt_tty_fd" ]; then
+    exec 3>&-
+    prompt_tty_fd=""
+  fi
+}
+
+print_prompt() {
+  printf '%s' "$1" >&"$prompt_fd"
+}
+
+print_prompt_line() {
+  printf '%s\n' "$1" >&"$prompt_fd"
+}
+
+prompt_value() {
+  local label="$1"
+  local current="$2"
+  local input=""
+
+  if [ -n "$current" ]; then
+    print_prompt "$label [$current]: "
+  else
+    print_prompt "$label: "
+  fi
+  IFS= read -r input <&"$prompt_fd" || true
+  if [ -n "$input" ]; then
+    printf '%s' "$input"
+  else
+    printf '%s' "$current"
+  fi
+}
+
+prompt_secret() {
+  local label="$1"
+  local current="$2"
+  local input=""
+
+  if [ -n "$current" ]; then
+    print_prompt "$label [hidden]: "
+  else
+    print_prompt "$label: "
+  fi
+  stty -echo <&"$prompt_fd"
+  IFS= read -r input <&"$prompt_fd" || true
+  stty echo <&"$prompt_fd"
+  printf '\n' >&"$prompt_fd"
+  if [ -n "$input" ]; then
+    printf '%s' "$input"
+  else
+    printf '%s' "$current"
+  fi
+}
+
+prompt_yes_no() {
+  local label="$1"
+  local default="$2"
+  local suffix="[y/N]"
+  local input=""
+
+  if [ "$default" = "true" ]; then
+    suffix="[Y/n]"
+  fi
+  print_prompt "$label $suffix: "
+  IFS= read -r input <&"$prompt_fd" || true
+  input="$(printf '%s' "$input" | tr '[:upper:]' '[:lower:]' | xargs)"
+  if [ -z "$input" ]; then
+    input="$default"
+  fi
+  case "$input" in
+    y|yes|true)
+      printf 'true'
+      ;;
+    n|no|false)
+      printf 'false'
+      ;;
+    *)
+      printf '%s' "$default"
+      ;;
+  esac
+}
+
+prompt_choice() {
+  local label="$1"
+  local current="$2"
+  shift 2
+  local options=("$@")
+  local options_label=""
+  local input=""
+  local option=""
+
+  options_label="$(IFS=/; printf '%s' "${options[*]}")"
+  if [ -n "$current" ]; then
+    print_prompt "$label ($options_label) [$current]: "
+  else
+    print_prompt "$label ($options_label): "
+  fi
+  IFS= read -r input <&"$prompt_fd" || true
+  if [ -z "$input" ]; then
+    input="$current"
+  fi
+  for option in "${options[@]}"; do
+    if [ "$input" = "$option" ]; then
+      printf '%s' "$input"
+      return 0
+    fi
+  done
+  printf '%s' "$current"
+}
+
+run_interactive_setup() {
+  print_prompt_line ""
+  print_prompt_line "goLaPress interactive install"
+  print_prompt_line ""
+
+  site_dir="$(prompt_value "Site directory" "$site_dir")"
+  app_url="$(prompt_value "App URL" "$app_url")"
+  admin_email="$(prompt_value "Admin email" "$admin_email")"
+  admin_display_name="$(prompt_value "Admin display name" "$admin_display_name")"
+  admin_password="$(prompt_secret "Admin password" "$admin_password")"
+  db_driver="$(prompt_choice "Database driver" "$db_driver" mysql sqlite)"
+
+  if [ "$db_driver" = "mysql" ]; then
+    mysql_create_db_choice="false"
+    if [ "$mysql_create_db" -eq 1 ]; then
+      mysql_create_db_choice="true"
+    fi
+    mysql_create_db_choice="$(prompt_yes_no "Create MySQL database and user automatically" "$mysql_create_db_choice")"
+    mysql_db_name="$(prompt_value "MySQL database name" "$mysql_db_name")"
+    mysql_db_user="$(prompt_value "MySQL database user" "$mysql_db_user")"
+    mysql_db_password="$(prompt_secret "MySQL database password" "$mysql_db_password")"
+    mysql_dsn_host="$(prompt_value "MySQL app host" "$mysql_dsn_host")"
+    mysql_dsn_port="$(prompt_value "MySQL app port" "$mysql_dsn_port")"
+
+    if [ "$mysql_create_db_choice" = "true" ]; then
+      mysql_create_db=1
+      mysql_root_user="$(prompt_value "MySQL root user" "$mysql_root_user")"
+      mysql_root_host="$(prompt_value "MySQL root host" "$mysql_root_host")"
+      mysql_root_port="$(prompt_value "MySQL root port" "$mysql_root_port")"
+      mysql_root_password="$(prompt_secret "MySQL root password" "$mysql_root_password")"
+    else
+      mysql_create_db=0
+    fi
+
+    db_dsn="${mysql_db_user}:${mysql_db_password}@tcp(${mysql_dsn_host}:${mysql_dsn_port})/${mysql_db_name}?parseTime=true&charset=utf8mb4,utf8"
+  else
+    mysql_create_db=0
+    db_dsn=""
+  fi
+
+  runtime_mode="$(prompt_choice "Codex runtime" "$runtime_mode" auto local docker)"
+  codex_enabled_choice="$(prompt_yes_no "Enable Codex assistant" "$codex_enabled")"
+  codex_enabled="$codex_enabled_choice"
+  if [ "$codex_enabled" = "true" ] && [ "$runtime_mode" = "local" ]; then
+    install_codex_choice="$(prompt_yes_no "Install Codex CLI automatically now" "false")"
+    if [ "$install_codex_choice" = "true" ]; then
+      install_codex_requested=1
+    fi
+  fi
+
+  print_prompt_line ""
 }
 
 load_dotenv() {
@@ -248,6 +433,8 @@ mysql_db_user="${MYSQL_DB_USER:-}"
 mysql_db_password="${MYSQL_DB_PASSWORD:-}"
 mysql_dsn_host="${MYSQL_DSN_HOST:-127.0.0.1}"
 mysql_dsn_port="${MYSQL_DSN_PORT:-3306}"
+interactive_requested=0
+argument_count=$#
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -297,6 +484,8 @@ while [ $# -gt 0 ]; do
       mysql_dsn_host="${2:-}"; shift 2 ;;
     --mysql-dsn-port)
       mysql_dsn_port="${2:-}"; shift 2 ;;
+    --interactive)
+      interactive_requested=1; shift ;;
     -h|--help)
       usage; exit 0 ;;
     *)
@@ -306,6 +495,19 @@ while [ $# -gt 0 ]; do
       ;;
   esac
 done
+
+if [ "$argument_count" -eq 0 ]; then
+  interactive_requested=1
+fi
+
+if [ "$interactive_requested" -eq 1 ]; then
+  if ! setup_prompt_io; then
+    echo "Error: interactive mode requires a terminal." >&2
+    exit 1
+  fi
+  run_interactive_setup
+  close_prompt_io
+fi
 
 case "$fallback_mode" in
   background|loop)

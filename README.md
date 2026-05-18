@@ -74,7 +74,7 @@ For a quick start using the latest released binary:
 
 - **Standalone (Standard):** download the latest release archive and run `./scripts/run-standard.sh` from the extracted folder. This uses local `./data`, `./themes`, and `./plugins` folders on your host.
 - **All-in-One (withData):** download the latest release archive and run `./scripts/run-with-data.sh` from the extracted folder. This includes a MySQL database inside the container.
-- **VPS install without Docker:** `curl -fsSL -o install-vps.sh https://github.com/darkgreenev/golapress-dist/releases/latest/download/install-vps.sh && chmod +x install-vps.sh && ./install-vps.sh --site-dir /var/www/golapress --db-dsn 'user:pass@tcp(127.0.0.1:3306)/golapress?parseTime=true&charset=utf8mb4,utf8'`. See [docs/vps_binary_install.md](docs/vps_binary_install.md).
+- **VPS install without Docker:** interactive wizard: `bash <(curl -fsSL https://github.com/darkgreenev/golapress-dist/releases/latest/download/install-vps.sh)`. Downloaded-file form without `chmod`: `curl -fsSL -o install-vps.sh https://github.com/darkgreenev/golapress-dist/releases/latest/download/install-vps.sh && bash install-vps.sh`. See [docs/vps_binary_install.md](docs/vps_binary_install.md).
 
 These methods:
 1. Automatically fetch the latest `golapress` binary from the [distribution repo](https://github.com/darkgreenev/golapress-dist).
