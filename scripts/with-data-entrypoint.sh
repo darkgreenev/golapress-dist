@@ -30,20 +30,14 @@ mysql -e "CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'localhost' IDENTIFIED BY '$
 mysql -e "GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'localhost';"
 mysql -e "FLUSH PRIVILEGES;"
 
-# In the distribution repo, latest.json is already in the root
-# If it's not there (e.g. running from private repo), we might need to fetch it
-if [ ! -f "latest.json" ] && [ ! -d "golapress-dist" ]; then
+LATEST_JSON="latest.json"
+if [ ! -f "$LATEST_JSON" ]; then
     echo "Fetching distribution metadata..."
-    git clone --depth 1 https://github.com/darkgreenev/golapress-dist.git
-    cd golapress-dist
+    LATEST_JSON="$(mktemp)"
+    curl -fsSL -o "$LATEST_JSON" "${APP_UPDATE_LATEST_URL:-https://raw.githubusercontent.com/darkgreenev/golapress-dist/main/latest.json}"
 fi
 
-# Extract the binary from the latest release
 echo "Extracting latest binary for Linux..."
-LATEST_JSON="latest.json"
-if [ ! -f "$LATEST_JSON" ] && [ -d "golapress-dist" ]; then
-    LATEST_JSON="golapress-dist/latest.json"
-fi
 
 BINARY_URL=$(grep -o '"linux_amd64": "[^"]*' "$LATEST_JSON" | cut -d'"' -f4)
 if [ -z "$BINARY_URL" ]; then

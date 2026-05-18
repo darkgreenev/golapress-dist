@@ -72,15 +72,16 @@ Compose starts MySQL by default and stores database data, uploaded media, instal
 
 For a quick start using the latest released binary:
 
-- **Standalone (Standard):** `./scripts/run-standard.sh` (or `make docker-standard`). This uses local `./data`, `./themes`, and `./plugins` folders on your host.
-- **All-in-One (withData):** `./scripts/run-with-data.sh` (or `make docker-with-data`). This includes a MySQL database inside the container.
-- **VPS install without Docker:** `./scripts/install-vps.sh --site-dir /var/www/golapress --db-dsn 'user:pass@tcp(127.0.0.1:3306)/golapress?parseTime=true&charset=utf8mb4,utf8'`. See [docs/vps_binary_install.md](docs/vps_binary_install.md).
+- **Standalone (Standard):** download the latest release archive and run `./scripts/run-standard.sh` from the extracted folder. This uses local `./data`, `./themes`, and `./plugins` folders on your host.
+- **All-in-One (withData):** download the latest release archive and run `./scripts/run-with-data.sh` from the extracted folder. This includes a MySQL database inside the container.
+- **VPS install without Docker:** `curl -fsSL -o install-vps.sh https://github.com/darkgreenev/golapress-dist/releases/latest/download/install-vps.sh && chmod +x install-vps.sh && ./install-vps.sh --site-dir /var/www/golapress --db-dsn 'user:pass@tcp(127.0.0.1:3306)/golapress?parseTime=true&charset=utf8mb4,utf8'`. See [docs/vps_binary_install.md](docs/vps_binary_install.md).
 
 These methods:
 1. Automatically fetch the latest `golapress` binary from the [distribution repo](https://github.com/darkgreenev/golapress-dist).
 2. Configure the admin account automatically.
 3. Avoid a local Go toolchain.
-4. The VPS installer uses `systemd` when available and falls back to a managed background process when it is not.
+4. Ship version-matched public installer scripts in the release assets instead of requiring a `golapress-dist` checkout.
+5. The VPS installer uses `systemd` when available and falls back to a managed background process when it is not.
 
 ## Development Commands
 
@@ -120,7 +121,7 @@ The main environment variables are:
 - `SMTP_RELAY_URL`, `SMTP_RELAY_TOKEN`: outbound email relay settings for future password-reset mail delivery
 - `DB_DRIVER`: `mysql` or `sqlite`; contributor `scripts/dev.sh` falls back to `sqlite` only when neither the shell nor `.env` sets it
 - `DB_DSN`: MySQL or SQLite DSN; contributor `scripts/dev.sh` falls back to `file:./my-site/data/golapress.db?_foreign_keys=on` only when neither the shell nor `.env` sets it
-- `MEDIA_DIR`: uploaded media directory
+- `MEDIA_DIR`: advanced override for uploaded media storage; normal setups should leave media under `APP_SITE_DIR/data/media`
 - `PLUGINS_DIR`: trusted local plugin manifest directory
 - `THEMES_DIR`: local installed theme directory
 - `APP_DEV_RELOAD_ENABLED`: enables the development-only admin reload action when `APP_ENV=development`

@@ -2,6 +2,8 @@
 
 This guide is for public installs that use the released `golapress` binary from `golapress-dist`. It is not the contributor workflow for the private source repository.
 
+You do not need to clone `golapress-dist` for this path. Use the versioned installer asset from the latest public release.
+
 Use this path when you have a VPS or bare Linux server and do not want Docker.
 
 ## What The Installer Does
@@ -9,7 +11,9 @@ Use this path when you have a VPS or bare Linux server and do not want Docker.
 Run:
 
 ```bash
-./scripts/install-vps.sh \
+curl -fsSL -o install-vps.sh https://github.com/darkgreenev/golapress-dist/releases/latest/download/install-vps.sh
+chmod +x install-vps.sh
+./install-vps.sh \
   --site-dir /var/www/golapress \
   --app-url https://example.com \
   --admin-password 'use-a-long-random-password' \
@@ -18,7 +22,8 @@ Run:
 
 The script:
 
-- downloads the latest Linux release binary from `golapress-dist`
+- is shipped as a versioned release asset in `golapress-dist`
+- downloads the latest Linux release binary from `golapress-dist` metadata
 - installs the binary, defaulting to `/usr/local/bin/golapress` for root installs and `$HOME/.local/bin/golapress` for non-root installs
 - creates the site directory with `data/`, `themes/`, and `plugins/`
 - writes a safe site `.env.example` template with placeholder secret values
@@ -30,6 +35,7 @@ The script:
 - can install Node.js, npm, and `@openai/codex` when explicitly requested
 - installs and starts a `systemd` service when `systemd` is available and the script is run as root
 - falls back to a background process with `data/golapress.pid` and `data/golapress.log` when `systemd` is unavailable
+- can use `--fallback-mode loop` so a non-`systemd` install restarts the app automatically after normal process exits or crashes
 
 Supported Linux release architectures are `linux_amd64` and `linux_arm64`.
 
@@ -45,14 +51,14 @@ Set these values for a real VPS:
 The default admin email is `admin@example.com`. Override it with:
 
 ```bash
-./scripts/install-vps.sh \
+./install-vps.sh \
   --admin-email owner@example.com \
   --admin-password 'use-a-long-random-password'
 ```
 
 ## Using .env With install-vps.sh
 
-`install-vps.sh` now auto-loads a `.env` file from the current working directory when one is present.
+`install-vps.sh` auto-loads a `.env` file from the current working directory when one is present.
 
 That is useful when you do not want to repeat a long install command every time.
 
@@ -72,7 +78,7 @@ CODEX_RUNTIME=local
 Then run:
 
 ```bash
-./scripts/install-vps.sh
+./install-vps.sh
 ```
 
 Configuration precedence is:
@@ -85,7 +91,7 @@ Configuration precedence is:
 So if you keep most values in `.env`, you can still override one-off values with flags:
 
 ```bash
-./scripts/install-vps.sh --app-url https://example.com
+./install-vps.sh --app-url https://example.com
 ```
 
 ## MySQL Default
@@ -107,7 +113,7 @@ golapress:golapress@tcp(127.0.0.1:3306)/golapress?parseTime=true&charset=utf8mb4
 For production or shared VPS use, pass your actual DSN explicitly:
 
 ```bash
-./scripts/install-vps.sh \
+./install-vps.sh \
   --site-dir /var/www/golapress \
   --app-url https://example.com \
   --admin-password 'use-a-long-random-password' \
@@ -151,7 +157,7 @@ Optional flags for the MySQL admin connection:
 Example:
 
 ```bash
-./scripts/install-vps.sh \
+./install-vps.sh \
   --site-dir /var/www/golapress \
   --app-url https://example.com \
   --admin-password 'use-a-long-random-password' \
@@ -173,7 +179,7 @@ If you do not pass `--db-dsn`, the installer also builds the goLaPress DSN autom
 Use SQLite only when the operator explicitly asks for the no-MySQL path:
 
 ```bash
-./scripts/install-vps.sh \
+./install-vps.sh \
   --site-dir /var/www/golapress \
   --app-url https://example.com \
   --admin-password 'use-a-long-random-password' \
@@ -226,6 +232,25 @@ When `systemd` is unavailable, or when the script is not run as root, the instal
 /var/www/golapress/data/golapress.log
 ```
 
+If you want the fallback process to restart the app automatically after crashes or normal exits, install with:
+
+```bash
+./install-vps.sh \
+  --site-dir /var/www/golapress \
+  --app-url https://example.com \
+  --admin-password 'use-a-long-random-password' \
+  --db-dsn 'golapress:change-me@tcp(127.0.0.1:3306)/golapress?parseTime=true&charset=utf8mb4,utf8' \
+  --fallback-mode loop
+```
+
+That mode also writes:
+
+```text
+/var/www/golapress/run-golapress-loop.sh
+```
+
+The loop wrapper starts `run-golapress.sh`, waits 5 seconds if the app exits, and starts it again. The PID file points to the wrapper process.
+
 Useful commands:
 
 ```bash
@@ -235,6 +260,8 @@ kill $(cat /var/www/golapress/data/golapress.pid)
 ```
 
 Rerunning the installer in this fallback mode now reads `data/golapress.pid`, sends `SIGTERM` to the existing process, waits up to 15 seconds for a clean exit, and only uses `SIGKILL` as a last resort before starting the new copy. This avoids stacking multiple app instances across reinstall or upgrade runs.
+
+Loop mode helps with crashes, but it is still not a full service manager. It does not restart the app after a machine reboot unless something else launches the wrapper again.
 
 For long-term production, prefer a real process supervisor such as `systemd`, `supervisord`, or the VPS provider's service manager.
 
@@ -270,7 +297,7 @@ Run the installer again with the same `--site-dir` and database settings. It dow
 For MySQL installs:
 
 ```bash
-./scripts/install-vps.sh \
+./install-vps.sh \
   --site-dir /var/www/golapress \
   --app-url https://example.com \
   --admin-password 'use-a-long-random-password' \
@@ -281,7 +308,7 @@ For MySQL installs:
 For SQLite installs:
 
 ```bash
-./scripts/install-vps.sh \
+./install-vps.sh \
   --site-dir /var/www/golapress \
   --app-url https://example.com \
   --admin-password 'use-a-long-random-password' \
@@ -334,7 +361,7 @@ npm install -g @openai/codex
 The installer can do this for you when requested:
 
 ```bash
-./scripts/install-vps.sh \
+./install-vps.sh \
   --site-dir /var/www/golapress \
   --app-url https://example.com \
   --admin-password 'use-a-long-random-password' \
@@ -373,7 +400,7 @@ This matters because goLaPress checks for a `codex` executable on the process `P
 At install time:
 
 ```bash
-./scripts/install-vps.sh \
+./install-vps.sh \
   --site-dir /var/www/golapress \
   --app-url https://example.com \
   --admin-password 'use-a-long-random-password' \
@@ -448,7 +475,7 @@ tail -f /var/www/golapress/data/golapress.log
 Use the default MySQL path:
 
 ```bash
-./scripts/install-vps.sh \
+./install-vps.sh \
   --site-dir /var/www/golapress \
   --app-url https://example.com \
   --admin-password 'use-a-long-random-password' \
@@ -460,7 +487,7 @@ Use the default MySQL path:
 Opt in to SQLite:
 
 ```bash
-./scripts/install-vps.sh \
+./install-vps.sh \
   --site-dir /var/www/golapress \
   --app-url https://example.com \
   --admin-password 'use-a-long-random-password' \
@@ -472,7 +499,7 @@ Opt in to SQLite:
 Install Codex CLI first, or let the installer do it with `--install-codex`, then install with:
 
 ```bash
-./scripts/install-vps.sh \
+./install-vps.sh \
   --site-dir /var/www/golapress \
   --app-url https://example.com \
   --admin-password 'use-a-long-random-password' \

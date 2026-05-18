@@ -71,32 +71,38 @@ dist/release/
 Current release workflow assumes:
 
 - archives are built in `golapress/dist/release/`
-- `latest.json` and `checksums.txt` are copied from `golapress/dist/release/` into the sibling `golapress-dist/` checkout
+- `latest.json` is published from `golapress-dist` as the bootstrap metadata file
+- release assets are uploaded from `golapress/dist/release/` into a `golapress-dist` GitHub release
 - GitHub release uploads use the archives directly from `golapress/dist/release/`
 
 ## What Lives In golapress-dist
 
 `golapress-dist` is expected to carry two kinds of public distribution material:
 
-- file-based packaging and installer content
+- bootstrap metadata, mirrored public support files, and docs
 - released binary artifacts
 
-File-based packaging content includes things like:
+Bootstrap metadata, mirrored public support files, and docs include things like:
 
 - `.env.example`
 - public `README.md`
 - `Dockerfile.standard`
 - `Dockerfile.withData`
-- release installer scripts such as `run-standard.sh`, `run-with-data.sh`, and `install-vps.sh`
+- mirrored installer scripts such as `run-standard.sh`, `run-with-data.sh`, and `install-vps.sh`
 - public install docs needed by the distribution repo
+- `latest.json`
 
 Binary artifacts include:
 
 - `golapress-linux-amd64.tar.gz`
 - `golapress-linux-arm64.tar.gz`
 - `golapress-windows-amd64.zip`
+- `install-vps.sh`
+- `run-standard.sh`
+- `run-with-data.sh`
 - `checksums.txt`
-- `latest.json`
+
+Each platform archive is now self-contained. It includes the binary plus the public release support files needed for direct binary and Docker-based installs.
 
 ## Two Update Types
 
@@ -109,9 +115,8 @@ This updates the file-based content in `golapress-dist`.
 Examples:
 
 - README changes
-- Docker packaging changes
-- new public installer scripts
-- installer documentation changes
+- documentation-only changes
+- bootstrap metadata publication changes
 
 This is handled from the private repo with:
 
@@ -154,12 +159,13 @@ dist/release/
 It produces:
 
 - platform archives
+- version-matched installer script assets
 - `checksums.txt`
 - `latest.json`
 
 The script does not write to the repository root. Release artifacts are expected to stay under `dist/release/`.
 
-The generated `latest.json` points to GitHub release asset URLs in `golapress-dist`, using the supplied version string.
+The generated `latest.json` points to GitHub release asset URLs in `golapress-dist`, including the installer script assets, using the supplied version string.
 
 ## When A Dist Repo Commit Is Enough
 
@@ -168,9 +174,9 @@ A `golapress-dist` commit without a new release is enough when the public change
 Examples:
 
 - README clarifications
-- Docker packaging file changes
-- updated installer scripts that download the latest existing binary
-- VPS installer documentation updates
+- installer or Docker doc changes that should be visible in the dist repo
+- bootstrap metadata publication changes
+- mirrored public support file updates when you are not yet cutting a fresh release
 
 In these cases:
 
@@ -185,7 +191,7 @@ A new `golapress-dist` release is required when public users need updated applic
 Examples:
 
 - backend or frontend application changes in `golapress`
-- new app behavior required by released installers
+- new app behavior required by released installers or packaged Docker files
 - bug fixes in the binary itself
 - any change where `Tools > Updates` should deliver a newer build
 
@@ -193,20 +199,20 @@ In these cases:
 
 1. ensure the desired source changes are committed in `golapress`
 2. run `./scripts/build-dist.sh <version>` in `golapress`
-3. publish the generated archives and `checksums.txt` as a GitHub release in `golapress-dist`
+3. publish the generated archives, installer scripts, and `checksums.txt` as a GitHub release in `golapress-dist`
 4. update `latest.json` in `golapress-dist` to match that release
-5. commit and push the `latest.json` update in `golapress-dist` if it is tracked there outside the release asset upload step
+5. commit and push the `latest.json` update in `golapress-dist`
 
 ## Current Practical Rule
 
 Use this rule when deciding whether to release:
 
-- if only `golapress-dist` repo files changed, a dist commit is usually enough
-- if the `golapress` binary behavior changed, cut a new `golapress-dist` release
+- if only `golapress-dist` docs or bootstrap metadata handling changed, a dist commit is usually enough
+- if the `golapress` binary behavior changed, or the shipped release support files changed, cut a new `golapress-dist` release
 
 ## Why latest.json Matters
 
-The released binary paths are not guessed dynamically. Installers read `latest.json` and follow its URLs.
+The released binary and installer asset paths are not guessed dynamically. Installers read `latest.json` and follow its URLs.
 
 This matters for:
 
@@ -214,7 +220,7 @@ This matters for:
 - the VPS binary installer
 - binary update flows in the admin UI
 
-If `latest.json` still points at old assets, users will keep installing or updating to the old release even if the dist repo has newer scripts or docs.
+If `latest.json` still points at old assets, users will keep installing or updating to the old release even if the dist repo has newer docs.
 
 ## Standard Workflow
 
@@ -240,10 +246,9 @@ For an application release:
 ./scripts/build-dist.sh vX.Y.Z
 ```
 
-4. copy `dist/release/latest.json` and `dist/release/checksums.txt` into the sibling `golapress-dist/` checkout
-5. publish a `golapress-dist` GitHub release using the generated archives and `checksums.txt` from `dist/release/`
-6. ensure `latest.json` in `golapress-dist` points at that release version
-7. commit and push any tracked dist repo file updates
+4. publish a `golapress-dist` GitHub release using the generated archives, installer scripts, and `checksums.txt` from `dist/release/`
+5. update `latest.json` in the sibling `golapress-dist/` checkout to point at that release version
+6. commit and push any tracked dist repo file updates, including `latest.json`
 
 ## VPS Installer Specific Rule
 
@@ -252,11 +257,11 @@ Changes to these public distribution files:
 - `scripts/install-vps.sh`
 - `docs/vps_binary_install.md`
 
-must be synced into `golapress-dist` if you want public VPS users to see them.
+must be included in a new public release if you want public VPS users to get the version-matched installer asset immediately.
 
-Those changes alone do not automatically require a new binary release.
+Those changes do not always require a new application binary rebuild, but they do require refreshed release assets when you want the public installer surface to change.
 
-They do require a new release when the installer depends on behavior that only exists in a newer `golapress` binary.
+They still require a `golapress-dist` docs sync so the bootstrap repo stays current.
 
 ## Docker Installer Specific Rule
 
@@ -269,9 +274,9 @@ Changes to these files:
 - `run-standard.sh`
 - `run-with-data.sh`
 
-must be synced into `golapress-dist` for public Docker users to receive them.
+must be shipped in a new public release because the platform archives now carry the Docker support files.
 
-Those changes do not automatically require a new binary release unless the container should pull a newer application binary.
+Syncing the docs/bootstrap repo is still useful, but it is not sufficient on its own for release consumers.
 
 ## Admin Updater Relationship
 

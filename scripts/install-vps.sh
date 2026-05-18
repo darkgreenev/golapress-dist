@@ -3,10 +3,10 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/install-vps.sh [--site-dir PATH] [--install-dir PATH] [--app-url URL] [--db-dsn DSN] [--db-driver mysql|sqlite] [--runtime local|docker|auto]
+Usage: ./scripts/install-vps.sh [--site-dir PATH] [--install-dir PATH] [--app-url URL] [--db-dsn DSN] [--db-driver mysql|sqlite] [--runtime local|docker|auto] [--fallback-mode background|loop]
 
 Installs goLaPress on a VPS without Docker by downloading the latest release
-binary from golapress-dist, preparing a site directory, and either:
+binary from golapress-dist release metadata, preparing a site directory, and either:
   - installing a systemd service when systemd is available, or
   - starting a managed background process when systemd is not available.
 
@@ -41,6 +41,7 @@ Examples:
     --site-dir /var/www/golapress \
     --app-url https://example.com \
     --enable-codex \
+    --fallback-mode loop \
     --runtime local \
     --install-codex
 EOF
@@ -222,6 +223,7 @@ db_driver="${DB_DRIVER:-mysql}"
 default_mysql_dsn="golapress:golapress@tcp(127.0.0.1:3306)/golapress?parseTime=true&charset=utf8mb4,utf8"
 db_dsn="${DB_DSN:-$default_mysql_dsn}"
 runtime_mode="${CODEX_RUNTIME:-auto}"
+fallback_mode="${GOLAPRESS_FALLBACK_MODE:-background}"
 codex_enabled="${CODEX_AI_ENABLED:-false}"
 app_host="${APP_HOST:-0.0.0.0}"
 app_port="${APP_PORT:-8076}"
@@ -230,7 +232,7 @@ admin_password="${ADMIN_PASSWORD:-change-me-in-real-deployments}"
 admin_display_name="${ADMIN_DISPLAY_NAME:-Admin}"
 path_env="${PATH:-/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin}"
 service_name="golapress"
-repo_url="https://github.com/darkgreenev/golapress-dist"
+latest_url_default="https://raw.githubusercontent.com/darkgreenev/golapress-dist/main/latest.json"
 binary_name="golapress"
 release_arch="linux_amd64"
 use_systemd=0
@@ -261,6 +263,8 @@ while [ $# -gt 0 ]; do
       db_driver="${2:-}"; shift 2 ;;
     --runtime)
       runtime_mode="${2:-}"; shift 2 ;;
+    --fallback-mode)
+      fallback_mode="${2:-}"; shift 2 ;;
     --enable-codex)
       codex_enabled="true"; shift ;;
     --install-codex)
@@ -303,16 +307,21 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+case "$fallback_mode" in
+  background|loop)
+    ;;
+  *)
+    echo "Error: --fallback-mode must be 'background' or 'loop'." >&2
+    exit 1
+    ;;
+esac
+
 if ! command -v curl >/dev/null 2>&1; then
   echo "Error: curl is required." >&2
   exit 1
 fi
 if ! command -v tar >/dev/null 2>&1; then
   echo "Error: tar is required." >&2
-  exit 1
-fi
-if ! command -v git >/dev/null 2>&1; then
-  echo "Error: git is required." >&2
   exit 1
 fi
 
@@ -347,8 +356,8 @@ echo "Fetching release metadata..."
 if [ -f "latest.json" ]; then
   latest_json="$PWD/latest.json"
 else
-  git clone --depth 1 "$repo_url" "$tmp_dir/golapress-dist" >/dev/null 2>&1
-  latest_json="$tmp_dir/golapress-dist/latest.json"
+  latest_json="$tmp_dir/latest.json"
+  curl -fsSL -o "$latest_json" "${APP_UPDATE_LATEST_URL:-$latest_url_default}"
 fi
 
 binary_url="$(grep -o "\"${release_arch}\": \"[^\"]*" "$latest_json" | cut -d'"' -f4)"
@@ -483,6 +492,7 @@ EOF
   echo "Status: systemctl status $service_name"
 else
   run_script="$site_dir/run-golapress.sh"
+  loop_script="$site_dir/run-golapress-loop.sh"
   pid_file="$site_dir/data/golapress.pid"
   cat > "$run_script" <<EOF
 #!/usr/bin/env bash
@@ -497,12 +507,32 @@ exec "$install_dir/$binary_name"
 EOF
   chmod 0755 "$run_script"
 
+  cat > "$loop_script" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+while true; do
+  if "$run_script"; then
+    exit_code=0
+  else
+    exit_code=\$?
+  fi
+  printf '%s goLaPress exited with status %s; restarting in 5s\n' "\$(date -u +%Y-%m-%dT%H:%M:%SZ)" "\$exit_code"
+  sleep 5
+done
+EOF
+  chmod 0755 "$loop_script"
+
   stop_existing_background_process "$pid_file"
-  nohup "$run_script" > "$site_dir/data/golapress.log" 2>&1 &
+  launcher="$run_script"
+  if [ "$fallback_mode" = "loop" ]; then
+    launcher="$loop_script"
+  fi
+  nohup "$launcher" > "$site_dir/data/golapress.log" 2>&1 &
   pid=$!
   echo "$pid" > "$pid_file"
 
   echo "Started goLaPress without systemd."
+  echo "Fallback mode: $fallback_mode"
   echo "Site directory: $site_dir"
   echo "PID: $pid"
   echo "Log: $site_dir/data/golapress.log"
