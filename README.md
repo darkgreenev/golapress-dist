@@ -21,6 +21,10 @@ or:
 ./scripts/dev.sh
 ```
 
+For normal source-checkout development, prefer `./scripts/dev.sh`.
+It is the dev wrapper that rebuilds and restarts the app after a development reload.
+Do not run `./.tmp/golapress-dev` or another ad-hoc compiled binary directly when `APP_DEV_RELOAD_ENABLED=true`, because reload will stop the process without restarting it.
+
 Explicit local database modes:
 
 ```bash
@@ -51,6 +55,7 @@ Local dev database behavior:
 - use `make run-sqlite` or `make run-mysql` when you want an explicit local mode.
 - changing `APP_PORT` or `APP_URL` does not create a new site; keep `APP_SITE_DIR=./my-site` unless you intentionally want a separate isolated site with its own database, themes, plugins, and uploads.
 - use a different `APP_SITE_DIR` only for deliberate isolation, such as a throwaway local experiment or a parallel test environment.
+- if `APP_DEV_RELOAD_ENABLED=true`, start the app through `./scripts/dev.sh` and keep that wrapper process alive in a persistent shell or `tmux` session.
 
 ## Docker
 
