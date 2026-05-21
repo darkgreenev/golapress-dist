@@ -48,8 +48,8 @@ sudo codex login
 Today the built-in assistant and adjacent AI features can reliably help with:
 
 - AI chat in admin
+- prompt-library drafting for repeatable requests
 - theme import assistance
-- active theme fix workflows
 - guided recipe drafting for page-builder flows
 - operator guidance about Codex login and API-key setup
 
@@ -71,6 +71,10 @@ The wider admin product surface that an AI agent can read, explain, and help ope
 
 That does not mean the assistant has a stable, first-class tool call for every one of those actions yet. In many cases the current value is guidance, code-aware assistance, and workflow help inside admin rather than direct autonomous mutation.
 
+For the canonical public docs entrypoint, start from:
+
+- `index.md`
+
 ## What AI Agents Should Prefer
 
 When an AI agent is operating inside a public goLaPress install or repo checkout, prefer this order:
@@ -81,6 +85,14 @@ When an AI agent is operating inside a public goLaPress install or repo checkout
 4. direct file edits inside site-owned themes and plugins
 
 Avoid treating raw database access as the primary integration surface unless you are writing a controlled migration or recovery tool.
+
+For content manipulation specifically, prefer:
+
+1. admin UI workflows
+2. documented JSON APIs under `/api/v1/`
+3. plugin-owned route contracts when the task belongs to a plugin domain
+
+Direct SQL updates are not the normal content automation path.
 
 ## High-Risk Actions
 
@@ -119,6 +131,8 @@ See:
 - `theme_development.md`
 - `hook_reference.md`
 - `api_and_contracts.md`
+
+Theme and plugin docs must match the current runtime contract. AI agents should not invent template fields or plugin RPC surfaces that are not documented there.
 
 ## Practical Remote-Server Setup
 

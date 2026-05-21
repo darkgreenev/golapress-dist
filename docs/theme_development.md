@@ -1,30 +1,28 @@
-# GolaPress Theme Development Guide
+# goLaPress Theme Development Guide
 
-Themes in GolaPress control the layout, presentation, and asset bundles of the site. They are primarily HTML templates with a JSON manifest.
+Themes in goLaPress are directory-based installs with a `theme.json` manifest plus Go `html/template` HTML templates.
 
----
+This guide focuses on the current public runtime contract that theme authors and AI agents can safely rely on.
 
-## 1. Theme Structure
+## Theme Structure
 
-A standard theme follows this directory structure:
+A standard theme looks like this:
 
 ```text
 my-theme/
-├── theme.json           # Theme manifest (REQUIRED)
-├── templates/           # HTML templates (REQUIRED)
-│   ├── index.html       # Homepage/Blog index
-│   ├── page.html        # Single page template
-│   └── post.html        # Single post template
-└── assets/              # CSS, JS, and Images
+├── theme.json
+├── templates/
+│   ├── index.html
+│   ├── page.html
+│   └── post.html
+└── assets/
     ├── styles.css
-    └── screenshot.svg   # Theme preview image
+    └── screenshot.svg
 ```
 
----
+## Theme Manifest
 
-## 2. The Theme Manifest (`theme.json`)
-
-The `theme.json` defines the identity and capabilities of your theme.
+Current manifest shape:
 
 ```json
 {
@@ -32,8 +30,9 @@ The `theme.json` defines the identity and capabilities of your theme.
   "name": "My Custom Theme",
   "version": "1.0.0",
   "author": "Your Name",
-  "summary": "A clean, modern theme for GolaPress.",
+  "summary": "A clean, modern theme for goLaPress.",
   "templates": {
+    "home": "templates/index.html",
     "index": "templates/index.html",
     "page": "templates/page.html",
     "post": "templates/post.html"
@@ -44,79 +43,197 @@ The `theme.json` defines the identity and capabilities of your theme.
   },
   "supports": {
     "navigation": true,
-    "menu_locations": ["primary", "footer"]
+    "menu_locations": ["primary", "footer"],
+    "widget_areas": [
+      {
+        "id": "footer_widgets",
+        "label": "Footer Widgets"
+      }
+    ],
+    "appearance": {
+      "logo": true,
+      "accent_color": true,
+      "header_styles": ["classic", "centered"],
+      "footer_styles": ["minimal", "split"],
+      "button_styles": ["solid", "outline"],
+      "typography_styles": ["serif", "sans"]
+    }
   }
 }
 ```
 
----
+Notes:
 
-## 3. Template Syntax
+- `templates.home` is optional.
+- `templates.index`, `templates.page`, and `templates.post` are the main public template entrypoints.
+- runtime stylesheet loading should use `.Site.StylesheetURL`, not a raw manifest asset path in templates.
 
-GolaPress uses standard Go `html/template` syntax. Every template receives a `Context` object.
+## Template Runtime Contract
 
-### Common Variables:
-*   `{{.Site.Title}}`: The site name.
-*   `{{.Page.Title}}`: The title of the current post or page.
-*   `{{.Page.Content}}`: The HTML content (already rendered from Markdown/HTML).
-*   `{{.Navigation.Primary}}`: The list of links for the primary menu.
+goLaPress uses standard Go `html/template` syntax.
 
-### Example `page.html`:
+Do not invent template fields. Use only the documented runtime roots and fields.
+
+### Common Root Objects
+
+Current root objects vary by template, but the stable public set includes:
+
+- `.Site`
+- `.Theme`
+- `.Slots`
+- `.SEO`
+- `.Pages`
+- `.Posts`
+- `.FeaturedPosts`
+- `.NotePosts`
+- `.Categories`
+- `.Pagination`
+- `.ArchiveTitle`
+- `.ArchiveDescription`
+- `.Preview`
+- `.Page`
+- `.Post`
+- `.FeaturedMedia`
+- `.BodyHTML`
+
+### `.Site` Fields
+
+Current public `.Site` fields include:
+
+- `Title`
+- `URL`
+- `Tagline`
+- `StylesheetURL`
+- `CustomCSS`
+- `CustomHeadHTML`
+- `CustomFooterHTML`
+- `HomeURL`
+- `PostsURL`
+- `AccentColor`
+- `AccentColorStrong`
+- `HeaderVariant`
+- `FooterVariant`
+- `ButtonVariant`
+- `TypographyVariant`
+- `ThemeSettings`
+- `AppearanceClasses`
+- `Logo`
+- `PrimaryNavigation`
+- `FooterNavigation`
+- `NavigationByLocation`
+- `WidgetAreas`
+
+### Common Mistakes To Avoid
+
+Do not use these outdated or incorrect patterns:
+
+- `{{ .Page.Content }}`
+- `{{ .Navigation.Primary }}`
+- `{{ .Theme.Assets.Stylesheet }}`
+- `{{ .Theme.Settings.some_key }}`
+
+Use these instead:
+
+- `{{ .BodyHTML }}`
+- `{{ range .Site.PrimaryNavigation }}...{{ end }}`
+- `{{ .Site.StylesheetURL }}`
+- `{{ index .Site.ThemeSettings "some_key" }}`
+
+## Example `page.html`
+
 ```html
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>{{.Page.Title}} - {{.Site.Title}}</title>
-    <link rel="stylesheet" href="{{.Theme.Assets.Stylesheet}}">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ .SEO.Title }}</title>
+  {{ .Site.CustomHeadHTML }}
+  {{ if .Site.StylesheetURL }}<link rel="stylesheet" href="{{ .Site.StylesheetURL }}">{{ end }}
+  <style>{{ .Site.CustomCSS }}</style>
 </head>
-<body>
-    <header>
-        <h1>{{.Site.Title}}</h1>
-        <nav>
-            {{range .Navigation.Primary}}
-                <a href="{{.URL}}">{{.Label}}</a>
-            {{end}}
-        </nav>
-    </header>
+<body class="{{ .Site.AppearanceClasses }}">
+  <header>
+    <a href="{{ .Site.HomeURL }}">{{ .Site.Title }}</a>
+    <nav>
+      {{ range .Site.PrimaryNavigation }}
+        <a href="{{ .URL }}">{{ .Label }}</a>
+      {{ end }}
+    </nav>
+  </header>
 
+  <main class="detail detail--page">
+    {{ index .Slots "page_before_title" }}
     <article>
-        <h2>{{.Page.Title}}</h2>
-        <div class="content">
-            {{.Page.Content}}
-        </div>
+      <h1>{{ .Page.Title }}</h1>
+      {{ index .Slots "page_after_title" }}
+      <div class="content">
+        {{ .BodyHTML }}
+      </div>
+      {{ index .Slots "page_after_body" }}
     </article>
+  </main>
+
+  <footer>
+    {{ index .Slots "site_footer_before" }}
+    {{ .Site.CustomFooterHTML }}
+  </footer>
 </body>
 </html>
 ```
 
----
+## Post And Archive Guidance
 
-## 4. Customizing Appearance
+- Use `.Posts`, `.FeaturedPosts`, `.NotePosts`, `.Pages`, and `.Categories` for repeatable listing sections.
+- Use `.Post.Title`, `.Post.Excerpt`, `.Post.Categories`, and `.BodyHTML` in `post.html`.
+- Use `.Page.Title` and `.BodyHTML` in `page.html`.
+- For post summary links, use the provided `.URL` or `.Slug` contract, not hardcoded guesses.
+- Keep page and post layouts visually aligned with the homepage design rather than treating them as generic fallback templates.
 
-Themes can define custom fields for the GolaPress Admin "Appearance" settings.
+## Appearance And Theme Settings
 
-```json
-"supports": {
-  "appearance": {
-    "fields": [
-      {
-        "key": "theme_accent_color",
-        "label": "Accent Color",
-        "type": "color",
-        "default_value": "#21759b"
-      }
-    ]
-  }
-}
+Themes can declare bounded appearance controls in `supports.appearance`.
+
+Theme-owned runtime values are exposed through:
+
+- `.Site.ThemeSettings`
+- `.Site.AccentColor`
+- `.Site.HeaderVariant`
+- `.Site.FooterVariant`
+- `.Site.ButtonVariant`
+- `.Site.TypographyVariant`
+- `.Site.AppearanceClasses`
+
+Example:
+
+```html
+{{ with index .Site.ThemeSettings "theme_accent_note" }}
+  <p class="theme-note">{{ . }}</p>
+{{ end }}
 ```
 
-These values are accessible in templates via `{{.Theme.Settings.theme_accent_color}}`.
+Use `index` only for map-backed data like:
 
----
+- `.Site.ThemeSettings`
+- `.Site.NavigationByLocation`
+- `.Site.WidgetAreas`
+- `.Slots`
 
-## 5. Deployment
+## Slots And Plugin Output
 
-1.  Zip your theme folder.
-2.  Go to **Appearance > Themes** in GolaPress Admin.
-3.  Click **Upload Theme** and select your ZIP file.
-4.  Activate the theme.
+Themes can render plugin-owned slot output with:
+
+```html
+{{ index .Slots "site_footer_before" }}
+```
+
+Current public slot names are documented in `api_and_contracts.md`.
+
+## Deployment
+
+1. Zip the theme folder.
+2. Open `Appearance > Themes` in goLaPress admin.
+3. Upload the ZIP.
+4. Activate the theme.
+
+After activation, verify homepage, page, post, and any plugin public routes that should render inside the active theme.
