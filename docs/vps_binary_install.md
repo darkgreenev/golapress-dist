@@ -227,6 +227,40 @@ systemctl stop golapress
 journalctl -u golapress -f
 ```
 
+## Backup Verification And Restore
+
+Create a database snapshot:
+
+```bash
+golapress snapshot-site
+```
+
+Verify a backup artifact before restoring it:
+
+```bash
+golapress restore-check --file backups/mysql/golapress_YYYY-MM-DD_HHMMSS.sql.gz
+golapress restore-check --file backups/sqlite/golapress_YYYY-MM-DD_HHMMSS.db.gz
+```
+
+The restore check is non-destructive. It confirms the artifact is a readable gzip archive with a supported goLaPress database payload.
+
+For MySQL restores, import the verified SQL dump into the intended database:
+
+```bash
+gzip -dc /var/www/golapress/backups/mysql/golapress_YYYY-MM-DD_HHMMSS.sql.gz \
+  | mysql --host=127.0.0.1 --port=3306 --user=golapress --password golapress
+```
+
+For SQLite restores, stop the app first, replace `data/golapress.db`, then start the app again:
+
+```bash
+systemctl stop golapress
+gzip -dc /var/www/golapress/backups/sqlite/golapress_YYYY-MM-DD_HHMMSS.db.gz > /var/www/golapress/data/golapress.db
+systemctl start golapress
+```
+
+Database restore and filesystem restore are separate steps. Themes, plugins, uploads, and runtime env files should come from the site repo, storage snapshot, or external file backup.
+
 The service runs the release binary and sets the runtime environment directly. The site-owned files remain under `--site-dir`.
 
 The service reads its runtime environment from:

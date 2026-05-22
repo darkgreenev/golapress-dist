@@ -4,14 +4,6 @@ This document lists the public-facing contracts that plugin authors, theme autho
 
 It is not a full internal architecture dump. It is the current operational contract.
 
-This page is primarily:
-
-- a route and contract inventory
-- a site layout reference
-- a public extension-surface reference
-
-It is not yet a complete create and update payload schema for every JSON API action. When a task requires exact mutation payloads, prefer the documented admin workflow first and then the matching public API route family.
-
 ## Site Layout
 
 The main site-owned areas are:
@@ -133,24 +125,6 @@ Current families include:
 
 These are the right surfaces for structured admin integrations. They are preferable to scraping HTML or mutating database tables directly.
 
-For AI agents and operators:
-
-- use these route families as the primary structured integration surface
-- avoid direct database writes for normal content, settings, and taxonomy operations
-- verify authentication, CSRF, and permission requirements in the active install before automating mutations
-
-Plugin domains may also expose additional routes below `/plugins/` or through plugin-declared APIs.
-
-## Content Mutation Guidance
-
-For normal site operations:
-
-1. use admin workflows
-2. use documented JSON APIs
-3. use plugin contracts for plugin-owned domain data
-
-Do not treat MySQL or SQLite tables as the default automation interface for posts, pages, categories, menus, comments, users, or settings.
-
 ## Theme Contract
 
 Themes are directory-based installs with a required `theme.json` manifest and HTML templates.
@@ -170,7 +144,7 @@ Themes should rely on:
 - the host-provided render context
 - documented plugin slot names
 
-See `theme_development.md` for the current runtime template roots and fields.
+See `theme_development.md`.
 
 ## Plugin Contract
 
@@ -275,11 +249,3 @@ On root-run VPS installs:
 ```bash
 sudo codex login
 ```
-
-## Canonical Docs Entry Point
-
-The public docs home is:
-
-- `index.md`
-
-That page should be treated as the canonical first stop for operators and AI agents because it links the current install, AI, API, theme, plugin, and release documents together.

@@ -4,6 +4,7 @@ This guide covers the public plugin contract for goLaPress installs distributed 
 
 Use this document together with:
 
+- `binary_plugin_development.md`
 - `hook_reference.md`
 - `api_and_contracts.md`
 
@@ -262,4 +263,4 @@ At minimum:
 - verify routes, hooks, slots, and shortcodes with the active theme
 - verify the plugin still starts after a goLaPress restart
 
-If you need deeper implementation examples, inspect the public plugin catalog plugins that match this release line or the corresponding source repository code for the same contract version.
+For implementation examples, see `binary_plugin_development.md` and `plugin_development_workflow.md`.
