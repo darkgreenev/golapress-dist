@@ -27,6 +27,7 @@ The script:
 - writes a site `.env` file for non-secret launcher settings
 - writes real secrets such as `DB_DSN` and `ADMIN_PASSWORD` to `data/runtime.env`
 - writes Codex admin defaults to `data/admin.env`
+- plugin repos can ship their own setup scripts for plugin-specific vendor credentials while internal Commerce trust uses the shared `GOLAP_CORE_TRUST_SECRET` in `data/runtime.env`
 - starts goLaPress with MySQL by default
 - can provision a MySQL database and application user when explicitly requested
 - can install Node.js, npm, and `@openai/codex` when explicitly requested
@@ -271,6 +272,8 @@ The service reads its runtime environment from:
 ```
 
 Rerunning the installer rewrites `.env` and `data/runtime.env` atomically from the supplied flags. It does not create timestamped `.env.bak.*` copies, and it removes legacy `.env.bak.*` files left by older installer runs.
+
+The installer also generates and preserves `GOLAP_CORE_TRUST_SECRET` in `data/runtime.env`, so Commerce and trusted plugins can derive their internal signing keys without per-plugin secret copy/paste.
 
 ## No systemd Fallback
 
