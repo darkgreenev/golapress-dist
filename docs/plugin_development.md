@@ -17,6 +17,21 @@ goLaPress currently recognizes these plugin types:
 
 Public third-party plugins should usually be `binary` plugins.
 
+## Development Runtime Rule
+
+When goLaPress runs from the source checkout in development mode and plugin workspace mode is active, plugins under the repo `plugins/` directory are treated as source checkouts, not installed binaries.
+
+That means:
+
+- the host discovers plugins from the repo workspace plugin directory
+- binary plugin manifests still use `type: "binary"` for the production contract
+- the development runtime executes those workspace plugins with `go run .`
+- the host does not fall back to the manifest executable or an installed site plugin binary in this mode
+
+If a workspace plugin cannot run from source, for example because `go.mod` is missing, the plugin must fail as unavailable in development mode. That failure is intentional because it prevents the app from silently testing an old packaged binary while the developer believes source changes are live.
+
+If the same plugin ID exists in both the repo workspace `plugins/` tree and the site-owned `APP_SITE_DIR/plugins/` tree, development startup now fails fast. Remove or rename the site-owned copy before retrying.
+
 ## Plugin Folder Layout
 
 Plugins are discovered from immediate child directories under `plugins/` that contain a `plugin.json`.
@@ -167,6 +182,31 @@ Current admin page fields:
 - `Path`
 - `RequiredRole`
 - `RenderMode`
+
+## Reusing The Shared Classic Editor
+
+Plugin admin pages can reuse the same classic WYSIWYG editor that core posts and pages use.
+
+The admin host already loads the shared editor CSS and JavaScript on admin pages. A plugin can opt in by emitting the same shell markup and data attributes that core uses:
+
+- root wrapper: `data-classic-editor`
+- visual surface: `data-classic-editor-visual`
+- backing textarea: `data-classic-editor-textarea`
+- mode tabs: `data-classic-editor-tab`
+- toolbar actions: `data-classic-editor-command`
+- format select: `data-classic-editor-format`
+- media button: `data-open-media-frame`
+
+Practical rules:
+
+- keep the real field value in the textarea
+- let the visual surface mirror that textarea
+- use the shared media button contract if the field should support media insertion
+- sanitize rich text on save in the plugin before storing it
+- render stored rich text intentionally on the public side; do not escape it as plain text after saving HTML
+- strip tags when generating short summaries, excerpts, or meta descriptions from rich text
+
+There is no separate SDK helper for the classic editor shell yet. For now, plugin admin pages should emit the same DOM contract that core uses.
 
 ## Registering Content Fields
 

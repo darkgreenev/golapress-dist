@@ -209,6 +209,7 @@ Use this rule when deciding whether to release:
 
 - if only `golapress-dist` docs or bootstrap metadata handling changed, a dist commit is usually enough
 - if the `golapress` binary behavior changed, or the shipped release support files changed, cut a new `golapress-dist` release
+- plugin targets in `cut-release` auto-bump the patch version when the source manifest still matches the last published version; if a developer has already manually bumped a plugin version, that manual version wins
 
 ## Why latest.json Matters
 
