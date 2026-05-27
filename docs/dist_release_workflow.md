@@ -124,7 +124,7 @@ This is handled from the private repo with:
 ./scripts/sync-dist-repo-files.sh /path/to/golapress-dist
 ```
 
-At the time of writing, that sync script copies:
+That sync script copies the public distribution files plus the entire `user-docs/` folder into `golapress-dist/docs/`.
 
 - `.env.example`
 - `Dockerfile.withData`
@@ -136,7 +136,6 @@ At the time of writing, that sync script copies:
 - `scripts/install-vps.sh`
 - `run-with-data.sh`
 - `run-standard.sh`
-- `docs/vps_binary_install.md`
 
 After syncing, commit and push the resulting changes in the `golapress-dist` checkout.
 
@@ -256,7 +255,7 @@ For an application release:
 Changes to these public distribution files:
 
 - `scripts/install-vps.sh`
-- `docs/vps_binary_install.md`
+- `user-docs/vps_binary_install.md`
 
 must be included in a new public release if you want public VPS users to get the version-matched installer asset immediately.
 
@@ -292,7 +291,7 @@ Source-checkout development runs do not use this updater flow. In development/so
 
 ## Operational Notes
 
-- `sync-dist-repo-files.sh` updates only the files it explicitly copies. If a new public installer or doc should ship in `golapress-dist`, add it to that script.
+- any file placed under `user-docs/` is treated as public and is mirrored into `golapress-dist/docs/`
 - `build-dist.sh` does not publish GitHub releases by itself. It prepares the release payload locally under `dist/release/`.
 - `latest.json` and the GitHub release assets must stay in sync.
 - Version strings passed to `build-dist.sh` become part of the generated release URLs.

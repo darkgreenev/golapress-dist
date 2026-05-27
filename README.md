@@ -79,7 +79,7 @@ For a quick start using the latest released binary:
 
 - **Standalone (Standard):** download the latest release archive and run `./scripts/run-standard.sh` from the extracted folder. This uses local `./data`, `./themes`, and `./plugins` folders on your host.
 - **All-in-One (withData):** download the latest release archive and run `./scripts/run-with-data.sh` from the extracted folder. This includes a MySQL database inside the container.
-- **VPS install without Docker:** interactive wizard: `bash <(curl -fsSL https://github.com/darkgreenev/golapress-dist/releases/latest/download/install-vps.sh)`. Downloaded-file form without `chmod`: `curl -fsSL -o install-vps.sh https://github.com/darkgreenev/golapress-dist/releases/latest/download/install-vps.sh && bash install-vps.sh`. See [docs/vps_binary_install.md](docs/vps_binary_install.md).
+- **VPS install without Docker:** interactive wizard: `bash <(curl -fsSL https://github.com/darkgreenev/golapress-dist/releases/latest/download/install-vps.sh)`. Downloaded-file form without `chmod`: `curl -fsSL -o install-vps.sh https://github.com/darkgreenev/golapress-dist/releases/latest/download/install-vps.sh && bash install-vps.sh`. See `user-docs/vps_binary_install.md` in this repo or `docs/vps_binary_install.md` in a release bundle.
 
 These methods:
 1. Automatically fetch the latest `golapress` binary from the [distribution repo](https://github.com/darkgreenev/golapress-dist).
@@ -154,6 +154,7 @@ See [.env.example](.env.example) for the current template.
 ## Project Docs
 
 - [docs/](docs/) contains architecture and strategy notes.
+- [user-docs/](user-docs/) contains public operator, theme, plugin, and release docs that ship in `golapress-dist` and release bundles.
 - [docs/local_mysql_dev.md](docs/local_mysql_dev.md) covers the explicit local MySQL contributor workflow.
 - [todos/](todos/) contains genuinely open implementation follow-ups.
 - [workdone/](workdone/) contains completed implementation records moved out of the active todo queue.
