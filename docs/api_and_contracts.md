@@ -144,7 +144,7 @@ Themes should rely on:
 - the host-provided render context
 - documented plugin slot names
 
-See `theme_development.md`.
+See [Theme Development](theme_development.html).
 
 ## Plugin Contract
 
@@ -172,7 +172,7 @@ Current plugin types:
 
 Plugin IDs must be lowercase slug-style identifiers.
 
-See `plugin_development.md`.
+See [Plugin Development](plugin_development.html).
 
 ## Binary Plugin RPC Contract
 
@@ -301,7 +301,7 @@ The current stable filter name is:
 
 - `render.context.filter`
 
-Current lifecycle hook names and payload shapes are documented in `hook_reference.md`.
+Current lifecycle hook names and payload shapes are documented in [Hook Reference](hook_reference.html).
 
 ## AI Runtime Contract
 

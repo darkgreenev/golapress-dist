@@ -4,10 +4,10 @@ This guide covers the public plugin contract for goLaPress installs distributed 
 
 Use this document together with:
 
-- `binary_plugin_development.md`
-- `hook_reference.md`
-- `api_and_contracts.md`
-- `private_plugin_distribution.md`
+- [Binary Plugin Development](binary_plugin_development.html)
+- [Hook Reference](hook_reference.html)
+- [API And Contracts](api_and_contracts.html)
+- [Private Plugin Distribution](private_plugin_distribution.html)
 
 ## Plugin Types
 
@@ -245,7 +245,7 @@ hooks := []plugins.HookRegistration{
 }
 ```
 
-See `hook_reference.md` for the current stable names and payload shapes.
+See [Hook Reference](hook_reference.html) for the current stable names and payload shapes.
 
 ## Registering Routes
 
@@ -422,4 +422,4 @@ At minimum:
 - verify routes, hooks, slots, and shortcodes with the active theme
 - verify the plugin still starts after a goLaPress restart
 
-For implementation examples, see `binary_plugin_development.md` and `plugin_development_workflow.md`.
+For implementation examples, see [Binary Plugin Development](binary_plugin_development.html) and [Plugin Development Workflow](plugin_development_workflow.html).

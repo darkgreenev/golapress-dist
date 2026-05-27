@@ -28,7 +28,7 @@ For public non-Docker VPS installs, use `local`.
 
 The assistant can authenticate Codex in either of these ways:
 
-- a saved OpenAI API key in `Settings > General`
+- a saved OpenAI API key in `Settings > System`
 - an existing Codex CLI login for the same OS user that runs goLaPress
 
 For current Codex CLI releases, the login command is:
@@ -115,10 +115,10 @@ The assistant is most useful when the public extension contracts are present in 
 
 See:
 
-- `plugin_development.md`
-- `theme_development.md`
-- `hook_reference.md`
-- `api_and_contracts.md`
+- [Plugin Development](plugin_development.html)
+- [Theme Development](theme_development.html)
+- [Hook Reference](hook_reference.html)
+- [API And Contracts](api_and_contracts.html)
 
 ## Practical Remote-Server Setup
 
@@ -126,7 +126,7 @@ For a non-Docker VPS install:
 
 1. install `@openai/codex`
 2. run `sudo codex login` or save an API key in admin
-3. enable Codex in `Settings > General`
+3. enable Codex in `Settings > System`
 4. choose runtime `Local`
 5. start a new assistant chat
 

@@ -2,7 +2,7 @@
 
 This guide provides a step-by-step walkthrough for creating a new GolaPress plugin in its own repository, leveraging the `golapress-dist` distribution for development and testing.
 
-Use this together with `private_plugin_distribution.md` when you want to package and share the finished plugin outside the official goLaPress catalog.
+Use this together with [Private Plugin Distribution](private_plugin_distribution.html) when you want to package and share the finished plugin outside the official goLaPress catalog.
 
 ## Development Mode Contract
 
@@ -258,4 +258,4 @@ If the plugin is already installed on a site as an installed private `binary` pl
 
 ## Next Steps
 - Explore `github.com/golapress/golapress-dist/sdk/hooks` for more event types.
-- Read the [Binary Plugin Development Guide](./binary_plugin_development.md) for more architectural details.
+- Read the [Binary Plugin Development Guide](binary_plugin_development.html) for more architectural details.

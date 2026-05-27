@@ -10,13 +10,13 @@ Rules:
 
 Current public docs:
 
-- `ai_capabilities.md`
-- `api_and_contracts.md`
-- `binary_plugin_development.md`
-- `dist_release_workflow.md`
-- `hook_reference.md`
-- `plugin_development.md`
-- `plugin_development_workflow.md`
-- `private_plugin_distribution.md`
-- `theme_development.md`
-- `vps_binary_install.md`
+- [AI Capabilities](ai_capabilities.html)
+- [API And Contracts](api_and_contracts.html)
+- [Binary Plugin Development](binary_plugin_development.html)
+- [Dist Release Workflow](dist_release_workflow.html)
+- [Hook Reference](hook_reference.html)
+- [Plugin Development](plugin_development.html)
+- [Plugin Development Workflow](plugin_development_workflow.html)
+- [Private Plugin Distribution](private_plugin_distribution.html)
+- [Theme Development](theme_development.html)
+- [VPS Binary Install](vps_binary_install.html)

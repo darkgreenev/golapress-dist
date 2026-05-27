@@ -473,7 +473,7 @@ Log in to:
 https://example.com/admin
 ```
 
-Open `Settings > General`, then in the `Codex AI` section:
+Open `Settings > System`, then in the `Codex AI` section:
 
 - check `Enable Codex assistant`
 - choose runtime `Local`
@@ -562,7 +562,7 @@ Install Codex CLI first, or let the installer do it with `--install-codex`, then
   --install-codex
 ```
 
-Then save the OpenAI API key from `Settings > General`.
+Then save the OpenAI API key from `Settings > System`.
 
 ### VPS Behind Nginx
 
