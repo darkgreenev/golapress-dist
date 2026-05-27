@@ -7,6 +7,7 @@ Use this document together with:
 - `binary_plugin_development.md`
 - `hook_reference.md`
 - `api_and_contracts.md`
+- `private_plugin_distribution.md`
 
 ## Plugin Types
 
@@ -16,6 +17,8 @@ goLaPress currently recognizes these plugin types:
 - `binary`
 
 Public third-party plugins should usually be `binary` plugins.
+
+For distribution, keep third-party plugins separate from the official goLaPress catalog by default. A plugin author can package and share a native `.zip` or `.tar.gz` plugin archive directly with operators without publishing that plugin in the official catalog.
 
 ## Development Runtime Rule
 
@@ -45,6 +48,8 @@ plugins/
     ├── my-plugin
     └── other runtime files
 ```
+
+For shareable package archives, the archive should contain exactly one plugin with this same layout.
 
 ## Manifest
 
