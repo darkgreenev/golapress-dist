@@ -202,6 +202,80 @@ Registered structures include:
 - slots
 - shortcodes
 
+Current HTTP route RPC payloads:
+
+```go
+type HTTPRequest struct {
+    ID         string
+    Method     string
+    Path       string
+    RawQuery   string
+    Headers    map[string]string
+    Body       []byte
+    RemoteAddr string
+    UserAgent  string
+    IsAdmin    bool
+    ActorJSON  []byte
+    Params     map[string]string
+}
+
+type HTTPResponse struct {
+    StatusCode int
+    Headers    map[string]string
+    Body       []byte
+}
+```
+
+Contract notes:
+
+- `Headers` is `map[string]string`
+- plugin authors should not expect pre-parsed `Form` or `Query` maps on the request payload
+- parse POST form bodies from `Body`
+- parse query parameters from `RawQuery`
+- use `UserAgent` directly from the payload
+
+Current slot and shortcode RPC payloads:
+
+```go
+type SlotRequest struct {
+    Slot        string
+    RouteKind   string
+    ContentType string
+    ContentID   string
+    Slug        string
+    Title       string
+    ActorJSON   []byte
+    ContextJSON []byte
+}
+
+type SlotResponse struct {
+    HTML            string
+    Assets          []string
+    CacheTTLSeconds int
+}
+
+type ShortcodeRequest struct {
+    Name        string
+    Attributes  map[string]string
+    Body        string
+    ContentType string
+    ContentID   string
+    Slug        string
+    Title       string
+    ActorJSON   []byte
+    ContextJSON []byte
+}
+
+type ShortcodeResponse struct {
+    HTML string
+}
+```
+
+Breaking-change guidance:
+
+- older plugins that hand-rolled these structs may fail if they still use outdated field shapes such as multi-value headers
+- plugin authors should prefer the current SDK/types over copied historical examples
+
 ## Render Slots
 
 Current public plugin slot names:

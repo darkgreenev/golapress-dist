@@ -101,6 +101,19 @@ Handshake values:
 - magic cookie key: `GOLAPRESS_PLUGIN_MAGIC_COOKIE`
 - magic cookie value: `nature-is-awesome`
 
+## Breaking Changes Note
+
+Plugin authors should treat the RPC payload structs as versioned contract surface, not as loose examples.
+
+Recent contract drift has broken older hand-rolled plugins that assumed:
+
+- `HTTPRequest.Headers` was `map[string][]string`
+- public POST handlers would receive pre-parsed form maps on the RPC request
+
+Those assumptions are no longer correct.
+
+Use the current SDK/types whenever possible instead of copying old structs into a plugin repo. If you hand-roll the RPC surface, you must keep it aligned with the current host contract below.
+
 ## RPC Service Surface
 
 The plugin service contract includes:
@@ -123,6 +136,102 @@ The plugin SDK defines the current request and response structs for:
 - proxied HTTP requests
 - slot rendering requests
 - shortcode rendering requests
+
+## Current HTTP RPC Contract
+
+The current public route request payload is:
+
+```go
+type HTTPRequest struct {
+    ID         string
+    Method     string
+    Path       string
+    RawQuery   string
+    Headers    map[string]string
+    Body       []byte
+    RemoteAddr string
+    UserAgent  string
+    IsAdmin    bool
+    ActorJSON  []byte
+    Params     map[string]string
+}
+```
+
+Important details:
+
+- `Headers` is `map[string]string`, not a multi-value map
+- parse form bodies from `Body`
+- parse query parameters from `RawQuery`
+- use `Headers["Referer"]` if you need the referrer
+- use `UserAgent` instead of pulling it from a multi-value header map
+
+The current route response payload is:
+
+```go
+type HTTPResponse struct {
+    StatusCode int
+    Headers    map[string]string
+    Body       []byte
+}
+```
+
+Minimal HTML example:
+
+```go
+return plugins.HTTPResponse{
+    StatusCode: 200,
+    Headers: map[string]string{
+        "Content-Type":  "text/html; charset=utf-8",
+        "Cache-Control": "no-store",
+    },
+    Body: []byte("<section><h1>Newsletter</h1></section>"),
+}, nil
+```
+
+For `RenderMode: "theme"` routes, return successful HTML for normal page fragments. For raw APIs, webhooks, downloads, and redirects, return the appropriate headers/body directly.
+
+## Current Slot And Shortcode RPC Contract
+
+The current slot payloads are:
+
+```go
+type SlotRequest struct {
+    Slot        string
+    RouteKind   string
+    ContentType string
+    ContentID   string
+    Slug        string
+    Title       string
+    ActorJSON   []byte
+    ContextJSON []byte
+}
+
+type SlotResponse struct {
+    HTML            string
+    Assets          []string
+    CacheTTLSeconds int
+}
+```
+
+The current shortcode payloads are:
+
+```go
+type ShortcodeRequest struct {
+    Name        string
+    Attributes  map[string]string
+    Body        string
+    ContentType string
+    ContentID   string
+    Slug        string
+    Title       string
+    ActorJSON   []byte
+    ContextJSON []byte
+}
+
+type ShortcodeResponse struct {
+    HTML string
+}
+```
 
 ## Registering Hooks
 
@@ -159,6 +268,11 @@ Practical guidance:
 - use a unique prefix below `/plugins/`
 - use `RenderMode: "theme"` for HTML fragments that should render inside the active theme
 - use raw responses for APIs, downloads, redirects, and webhooks
+
+Testing note:
+
+- goLaPress enforces origin checks on POST requests
+- when testing plugin POST routes with `curl`, send matching `Origin` and `Referer` headers for the site URL
 
 ## Registering Admin UI
 
