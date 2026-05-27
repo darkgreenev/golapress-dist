@@ -254,6 +254,8 @@ my-cool-plugin/
 
 The receiving operator can install that archive from the admin Add Plugin screen through the native package upload path. This is separate from the official goLaPress catalog.
 
+If the plugin is already installed on a site as an installed private `binary` plugin, the Plugins screen can also export it directly through the `Download Package` action. That produces a shareable `.zip` package from the installed plugin directory.
+
 ## Next Steps
 - Explore `github.com/golapress/golapress-dist/sdk/hooks` for more event types.
 - Read the [Binary Plugin Development Guide](./binary_plugin_development.md) for more architectural details.

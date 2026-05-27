@@ -123,7 +123,7 @@ The main environment variables are:
 - `APP_UPDATE_LATEST_URL`: release metadata URL used by the admin self-updater
 - `APP_HOST`: listen host, default `0.0.0.0` (all interfaces)
 - `APP_PORT`: listen port, default `8076`
-- `SMTP_RELAY_URL`, `SMTP_RELAY_TOKEN`: outbound email relay settings for future password-reset mail delivery
+- System-managed settings such as Codex and `SMTP_RELAY_URL` / `SMTP_RELAY_TOKEN` are edited under `Settings > System` and saved in `data/admin.env`
 - `DB_DRIVER`: `mysql` or `sqlite`; contributor `scripts/dev.sh` falls back to `sqlite` only when neither the shell nor `.env` sets it
 - `DB_DSN`: MySQL or SQLite DSN; contributor `scripts/dev.sh` falls back to `file:./my-site/data/golapress.db?_foreign_keys=on` only when neither the shell nor `.env` sets it
 - `MEDIA_DIR`: advanced override for uploaded media storage; normal setups should leave media under `APP_SITE_DIR/data/media`
