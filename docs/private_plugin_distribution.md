@@ -93,7 +93,7 @@ goLaPress validates package structure and manifest rules, but that does not turn
 6. Test the package on a `golapress-dist` install or released binary install.
 7. Share the package directly with operators or clients.
 
-If that plugin is already installed on a goLaPress site as a private binary plugin, an admin can also open `Plugins` and use `Download Package` to export the installed plugin directory as a shareable `.zip` archive.
+If that plugin is already installed on a goLaPress site as a private binary plugin, an admin can also open `Plugins` and use `Export Package` to export the installed plugin directory as a shareable `.zip` archive.
 
 That export path is intentionally limited to installed private `binary` plugins. It does not apply to built-in plugins or repo workspace plugins.
 

@@ -347,6 +347,8 @@ For Git-managed site directories, commit `.env.example` if you want a safe opera
 
 Run the installer again with the same `--site-dir` and database settings. It downloads the latest binary and restarts the app using the available service mode.
 
+If the site directory already has an existing goLaPress install, the installer now detects it and asks whether to repair or upgrade that install. That repair path rewrites the managed launcher and runtime env files, refreshes the binary, and leaves site-owned content alone.
+
 For MySQL installs:
 
 ```bash

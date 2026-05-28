@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/install-vps.sh [--site-dir PATH] [--install-dir PATH] [--app-url URL] [--db-dsn DSN] [--db-driver mysql|sqlite] [--runtime local|docker|auto] [--fallback-mode background|loop] [--interactive]
+Usage: ./scripts/install-vps.sh [--site-dir PATH] [--install-dir PATH] [--app-url URL] [--db-dsn DSN] [--db-driver mysql|sqlite] [--runtime local|docker|auto] [--fallback-mode background|loop] [--interactive] [--repair]
 
 Installs goLaPress on a VPS without Docker by downloading the latest release
 binary from golapress-dist release metadata, preparing a site directory, and either:
@@ -49,6 +49,10 @@ Examples:
     --fallback-mode loop \
     --runtime local \
     --install-codex
+
+  ./scripts/install-vps.sh \
+    --site-dir /var/www/golapress \
+    --repair
 EOF
 }
 
@@ -271,16 +275,71 @@ run_interactive_setup() {
   print_prompt_line ""
 }
 
+detect_existing_install() {
+  local candidate=""
+  for candidate in \
+    "$site_dir/.env" \
+    "$site_dir/data/runtime.env" \
+    "$site_dir/data/admin.env" \
+    "$site_dir/run-golapress.sh" \
+    "$site_dir/run-golapress-loop.sh" \
+    "$site_dir/data/install.state"
+  do
+    if [ -e "$candidate" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 load_dotenv() {
   local env_file="$1"
+  local line=""
+  local key=""
+  local value=""
+  local decoded=""
+
   if [ ! -f "$env_file" ]; then
     return
   fi
 
-  set -a
-  # shellcheck disable=SC1090
-  . "$env_file"
-  set +a
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line#"${line%%[![:space:]]*}"}"
+    [ -z "$line" ] && continue
+    case "$line" in
+      \#*) continue ;;
+    esac
+    case "$line" in
+      *=*) ;;
+      *) continue ;;
+    esac
+
+    key="${line%%=*}"
+    key="${key%"${key##*[![:space:]]}"}"
+    case "$key" in
+      [A-Za-z_][A-Za-z0-9_]*)
+        ;;
+      *)
+        continue
+        ;;
+    esac
+
+    value="${line#*=}"
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+    if [[ ${#value} -ge 2 && $value == \'*\' ]]; then
+      decoded="${value:1:$(( ${#value} - 2 ))}"
+      decoded="${decoded//\'\\\'\'/\'}"
+    elif [[ ${#value} -ge 2 && $value == \"*\" ]]; then
+      decoded="${value:1:$(( ${#value} - 2 ))}"
+      printf -v decoded '%b' "$decoded"
+    else
+      decoded="$value"
+    fi
+
+    printf -v "$key" '%s' "$decoded"
+    export "$key"
+  done < "$env_file"
 }
 
 shell_quote() {
@@ -463,6 +522,7 @@ db_dsn="${DB_DSN:-$default_mysql_dsn}"
 runtime_mode="${CODEX_RUNTIME:-auto}"
 fallback_mode="${GOLAPRESS_FALLBACK_MODE:-background}"
 codex_enabled="${CODEX_AI_ENABLED:-false}"
+install_mode="${GOLAPRESS_INSTALL_MODE:-auto}"
 app_host="${APP_HOST:-0.0.0.0}"
 app_port="${APP_PORT:-8076}"
 admin_email="${ADMIN_EMAIL:-admin@example.com}"
@@ -488,6 +548,7 @@ mysql_dsn_host="${MYSQL_DSN_HOST:-127.0.0.1}"
 mysql_dsn_port="${MYSQL_DSN_PORT:-3306}"
 interactive_requested=0
 argument_count=$#
+repair_requested=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -539,6 +600,10 @@ while [ $# -gt 0 ]; do
       mysql_dsn_port="${2:-}"; shift 2 ;;
     --interactive)
       interactive_requested=1; shift ;;
+    --repair)
+      repair_requested=1
+      install_mode="repair"
+      shift ;;
     -h|--help)
       usage; exit 0 ;;
     *)
@@ -551,6 +616,31 @@ done
 
 if [ "$argument_count" -eq 0 ]; then
   interactive_requested=1
+fi
+
+existing_install=0
+if detect_existing_install; then
+  existing_install=1
+fi
+
+if [ "$existing_install" -eq 1 ]; then
+  install_mode="repair"
+  echo "Existing goLaPress install detected at $site_dir."
+  if [ "$interactive_requested" -eq 1 ] && [ "$repair_requested" -eq 0 ]; then
+    if ! setup_prompt_io; then
+      echo "Error: interactive mode requires a terminal." >&2
+      exit 1
+    fi
+    if [ "$(prompt_yes_no "Repair/upgrade this install" "true")" != "true" ]; then
+      close_prompt_io
+      echo "Aborted."
+      exit 0
+    fi
+    close_prompt_io
+  else
+    echo "Repair/upgrade mode enabled."
+  fi
+  echo "Managed files will be refreshed; site content, themes, plugins, uploads, and database are preserved."
 fi
 
 if [ "$interactive_requested" -eq 1 ]; then
@@ -634,6 +724,16 @@ data/sessions/
 backups/
 EOF
 fi
+
+mkdir -p "$site_dir/data"
+write_env_file "$site_dir/data/install.state" "$(cat <<EOF
+INSTALL_MODE=$(shell_quote "$install_mode")
+SITE_DIR=$(shell_quote "$site_dir")
+INSTALL_DIR=$(shell_quote "$install_dir")
+BINARY_NAME=$(shell_quote "$binary_name")
+UPDATED_AT=$(shell_quote "$(date -u +%Y-%m-%dT%H:%M:%SZ)")
+EOF
+)"
 
 echo "Downloading latest binary..."
 curl -fsSL -o "$tmp_dir/golapress.tar.gz" "$binary_url"
@@ -753,12 +853,59 @@ else
   cat > "$run_script" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
-set -a
-. "$site_dir/.env"
-if [ -f "$site_dir/data/runtime.env" ]; then
-  . "$site_dir/data/runtime.env"
-fi
-set +a
+
+load_env_file() {
+  local env_file="\$1"
+  local line=""
+  local key=""
+  local value=""
+  local decoded=""
+
+  if [ ! -f "\$env_file" ]; then
+    return
+  fi
+
+  while IFS= read -r line || [ -n "\$line" ]; do
+    line="\${line#"\${line%%[![:space:]]*}"}"
+    [ -z "\$line" ] && continue
+    case "\$line" in
+      \#*) continue ;;
+    esac
+    case "\$line" in
+      *=*) ;;
+      *) continue ;;
+    esac
+
+    key="\${line%%=*}"
+    key="\${key%"\${key##*[![:space:]]}"}"
+    case "\$key" in
+      [A-Za-z_][A-Za-z0-9_]*)
+        ;;
+      *)
+        continue
+        ;;
+    esac
+
+    value="\${line#*=}"
+    value="\${value#"\${value%%[![:space:]]*}"}"
+    value="\${value%"\${value##*[![:space:]]}"}"
+    if [[ \${#value} -ge 2 && \$value == \'*\' ]]; then
+      decoded="\${value:1:\$(( \${#value} - 2 ))}"
+      decoded="\${decoded//\'\\\\\'\'/\'}"
+    elif [[ \${#value} -ge 2 && \$value == \"*\" ]]; then
+      decoded="\${value:1:\$(( \${#value} - 2 ))}"
+      printf -v decoded '%b' "\$decoded"
+    else
+      decoded="\$value"
+    fi
+
+    printf -v "\$key" '%s' "\$decoded"
+    export "\$key"
+  done < "\$env_file"
+}
+
+load_env_file "$site_dir/.env"
+load_env_file "$site_dir/data/runtime.env"
 exec "$install_dir/$binary_name"
 EOF
   chmod 0755 "$run_script"
