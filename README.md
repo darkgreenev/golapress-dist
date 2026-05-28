@@ -79,7 +79,7 @@ For a quick start using the latest released binary:
 
 - **Standalone (Standard):** download the latest release archive and run `./scripts/run-standard.sh` from the extracted folder. This uses local `./data`, `./themes`, and `./plugins` folders on your host.
 - **All-in-One (withData):** download the latest release archive and run `./scripts/run-with-data.sh` from the extracted folder. This includes a MySQL database inside the container.
-- **VPS install without Docker:** interactive wizard: `bash <(curl -fsSL https://github.com/darkgreenev/golapress-dist/releases/latest/download/install-vps.sh)`. Downloaded-file form without `chmod`: `curl -fsSL -o install-vps.sh https://github.com/darkgreenev/golapress-dist/releases/latest/download/install-vps.sh && bash install-vps.sh`. See `user-docs/vps_binary_install.md` in this repo or `docs/vps_binary_install.md` in a release bundle.
+- **VPS install without Docker:** interactive wizard: `bash <(curl -fsSL https://github.com/darkgreenev/golapress-dist/releases/latest/download/install-vps.sh)`. Downloaded-file form without `chmod`: `curl -fsSL -o install-vps.sh https://github.com/darkgreenev/golapress-dist/releases/latest/download/install-vps.sh && bash install-vps.sh`. The installer can also restore a full site package before first start. See `user-docs/vps_binary_install.md` in this repo or `docs/vps_binary_install.md` in a release bundle.
 
 These methods:
 1. Automatically fetch the latest `golapress` binary from the [distribution repo](https://github.com/darkgreenev/golapress-dist).
@@ -98,6 +98,7 @@ make test           # run Go tests
 make test-mysql     # run MySQL integration test through Docker Compose
 make build          # build bin/golapress
 go run ./cmd/golapress snapshot-site # create an ignored DB backup under APP_SITE_DIR/backups
+go run ./cmd/golapress package-site # create an ignored full-site package under APP_SITE_DIR/backups/site-packages
 make docker-up      # start with Docker Compose
 make docker-dev     # start Compose with local data/themes/plugins bind mounts
 make docker-standard # run standard binary variant with host data volume

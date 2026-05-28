@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/install-vps.sh [--site-dir PATH] [--install-dir PATH] [--app-url URL] [--db-dsn DSN] [--db-driver mysql|sqlite] [--runtime local|docker|auto] [--fallback-mode background|loop] [--interactive] [--repair]
+Usage: ./scripts/install-vps.sh [--site-dir PATH] [--install-dir PATH] [--app-url URL] [--db-dsn DSN] [--db-driver mysql|sqlite] [--runtime local|docker|auto] [--fallback-mode background|loop] [--binary-file PATH] [--restore-site-package PATH] [--site-package-passphrase VALUE] [--site-package-passphrase-file PATH] [--interactive] [--repair]
 
 Installs goLaPress on a VPS without Docker by downloading the latest release
 binary from golapress-dist release metadata, preparing a site directory, and either:
@@ -20,6 +20,7 @@ This means flags always win, and .env is a convenient default layer.
 Optional features:
   - provision a MySQL database/user on an existing MySQL server
   - install Node.js/npm and @openai/codex for local Codex runtime
+  - restore a full site package before the first app start
   - interactive setup wizard when run without flags in a terminal
 
 Examples:
@@ -49,6 +50,15 @@ Examples:
     --fallback-mode loop \
     --runtime local \
     --install-codex
+
+  ./scripts/install-vps.sh \
+    --site-dir /var/www/golapress \
+    --app-url https://example.com \
+    --binary-file /tmp/golapress \
+    --restore-site-package /root/golapress_site_2026-05-28_152108.tar.gz \
+    --site-package-passphrase 'package-secret' \
+    --db-driver mysql \
+    --db-dsn 'golapress:secret@tcp(127.0.0.1:3306)/golapress?parseTime=true&charset=utf8mb4,utf8'
 
   ./scripts/install-vps.sh \
     --site-dir /var/www/golapress \
@@ -262,6 +272,19 @@ run_interactive_setup() {
     db_dsn=""
   fi
 
+  restore_package_choice="false"
+  if [ -n "$restore_site_package" ]; then
+    restore_package_choice="true"
+  fi
+  restore_package_choice="$(prompt_yes_no "Restore a site package before first start" "$restore_package_choice")"
+  if [ "$restore_package_choice" = "true" ]; then
+    restore_site_package="$(prompt_value "Site package path" "$restore_site_package")"
+    site_package_passphrase="$(prompt_secret "Site package passphrase (leave blank if not encrypted)" "$site_package_passphrase")"
+  else
+    restore_site_package=""
+    site_package_passphrase=""
+  fi
+
   runtime_mode="$(prompt_choice "Codex runtime" "$runtime_mode" auto local docker)"
   codex_enabled_choice="$(prompt_yes_no "Enable Codex assistant" "$codex_enabled")"
   codex_enabled="$codex_enabled_choice"
@@ -379,6 +402,16 @@ write_env_file() {
   tmp="${file}.tmp"
   printf '%s' "$content" > "$tmp"
   chmod 0600 "$tmp" 2>/dev/null || true
+  mv "$tmp" "$file"
+}
+
+write_executable_file() {
+  file="$1"
+  content="$2"
+  mkdir -p "$(dirname "$file")"
+  tmp="${file}.tmp"
+  printf '%s' "$content" > "$tmp"
+  chmod 0755 "$tmp" 2>/dev/null || true
   mv "$tmp" "$file"
 }
 
@@ -532,6 +565,7 @@ path_env="${PATH:-/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin}"
 service_name="golapress"
 latest_url_default="https://raw.githubusercontent.com/darkgreenev/golapress-dist/main/latest.json"
 binary_name="golapress"
+binary_file="${GOLAPRESS_BINARY_FILE:-}"
 release_arch="linux_amd64"
 use_systemd=0
 install_codex_requested=0
@@ -546,6 +580,9 @@ mysql_db_user="${MYSQL_DB_USER:-}"
 mysql_db_password="${MYSQL_DB_PASSWORD:-}"
 mysql_dsn_host="${MYSQL_DSN_HOST:-127.0.0.1}"
 mysql_dsn_port="${MYSQL_DSN_PORT:-3306}"
+restore_site_package="${RESTORE_SITE_PACKAGE:-}"
+site_package_passphrase="${SITE_PACKAGE_PASSPHRASE:-}"
+site_package_passphrase_file="${SITE_PACKAGE_PASSPHRASE_FILE:-}"
 interactive_requested=0
 argument_count=$#
 repair_requested=0
@@ -566,6 +603,8 @@ while [ $# -gt 0 ]; do
       runtime_mode="${2:-}"; shift 2 ;;
     --fallback-mode)
       fallback_mode="${2:-}"; shift 2 ;;
+    --binary-file)
+      binary_file="${2:-}"; shift 2 ;;
     --enable-codex)
       codex_enabled="true"; shift ;;
     --install-codex)
@@ -598,6 +637,12 @@ while [ $# -gt 0 ]; do
       mysql_dsn_host="${2:-}"; shift 2 ;;
     --mysql-dsn-port)
       mysql_dsn_port="${2:-}"; shift 2 ;;
+    --restore-site-package)
+      restore_site_package="${2:-}"; shift 2 ;;
+    --site-package-passphrase)
+      site_package_passphrase="${2:-}"; shift 2 ;;
+    --site-package-passphrase-file)
+      site_package_passphrase_file="${2:-}"; shift 2 ;;
     --interactive)
       interactive_requested=1; shift ;;
     --repair)
@@ -697,20 +742,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "Fetching release metadata..."
-if [ -f "latest.json" ]; then
-  latest_json="$PWD/latest.json"
-else
-  latest_json="$tmp_dir/latest.json"
-  curl -fsSL -o "$latest_json" "${APP_UPDATE_LATEST_URL:-$latest_url_default}"
-fi
-
-binary_url="$(grep -o "\"${release_arch}\": \"[^\"]*" "$latest_json" | cut -d'"' -f4)"
-if [ -z "$binary_url" ]; then
-  echo "Error: could not find ${release_arch} binary URL in $latest_json" >&2
-  exit 1
-fi
-
 mkdir -p "$site_dir"/data/media "$site_dir"/themes "$site_dir"/plugins
 if [ ! -f "$site_dir/.gitignore" ]; then
   cat > "$site_dir/.gitignore" <<'EOF'
@@ -736,21 +767,63 @@ EOF
 )"
 
 echo "Downloading latest binary..."
-curl -fsSL -o "$tmp_dir/golapress.tar.gz" "$binary_url"
-tar -xzf "$tmp_dir/golapress.tar.gz" -C "$tmp_dir"
-
-extracted_dir="$(find "$tmp_dir" -maxdepth 1 -type d -name 'golapress-linux-*' | head -n 1)"
-if [ -z "$extracted_dir" ] || [ ! -f "$extracted_dir/$binary_name" ]; then
-  echo "Error: extracted release did not contain $binary_name" >&2
-  exit 1
-fi
-
 mkdir -p "$install_dir"
-install -m 0755 "$extracted_dir/$binary_name" "$install_dir/$binary_name"
+if [ -n "$binary_file" ]; then
+  if [ ! -f "$binary_file" ]; then
+    echo "Error: binary file not found: $binary_file" >&2
+    exit 1
+  fi
+  install -m 0755 "$binary_file" "$install_dir/$binary_name"
+else
+  echo "Fetching release metadata..."
+  if [ -f "latest.json" ]; then
+    latest_json="$PWD/latest.json"
+  else
+    latest_json="$tmp_dir/latest.json"
+    curl -fsSL -o "$latest_json" "${APP_UPDATE_LATEST_URL:-$latest_url_default}"
+  fi
+
+  binary_url="$(grep -o "\"${release_arch}\": \"[^\"]*" "$latest_json" | cut -d'"' -f4)"
+  if [ -z "$binary_url" ]; then
+    echo "Error: could not find ${release_arch} binary URL in $latest_json" >&2
+    exit 1
+  fi
+
+  curl -fsSL -o "$tmp_dir/golapress.tar.gz" "$binary_url"
+  tar -xzf "$tmp_dir/golapress.tar.gz" -C "$tmp_dir"
+
+  extracted_dir="$(find "$tmp_dir" -maxdepth 1 -type d -name 'golapress-linux-*' | head -n 1)"
+  if [ -z "$extracted_dir" ] || [ ! -f "$extracted_dir/$binary_name" ]; then
+    echo "Error: extracted release did not contain $binary_name" >&2
+    exit 1
+  fi
+  install -m 0755 "$extracted_dir/$binary_name" "$install_dir/$binary_name"
+fi
 
 mkdir -p "$site_dir/data"
 if [ -z "$db_dsn" ] && [ "$db_driver" = "sqlite" ]; then
   db_dsn="file:$site_dir/data/golapress.db?_foreign_keys=on"
+fi
+if [ -n "$site_package_passphrase_file" ]; then
+  if [ ! -f "$site_package_passphrase_file" ]; then
+    echo "Error: site package passphrase file not found: $site_package_passphrase_file" >&2
+    exit 1
+  fi
+  site_package_passphrase="$(tr -d '\r' < "$site_package_passphrase_file")"
+  site_package_passphrase="${site_package_passphrase%$'\n'}"
+fi
+if [ -n "$restore_site_package" ]; then
+  echo "Inspecting site package before restore..."
+  inspect_args=(inspect-site-package --site-dir "$site_dir" --file "$restore_site_package")
+  restore_args=(restore-site-package --site-dir "$site_dir" --file "$restore_site_package" --mode full --db-driver "$db_driver" --db-dsn "$db_dsn")
+  if [ -n "$site_package_passphrase" ]; then
+    inspect_args+=(--passphrase "$site_package_passphrase")
+    restore_args+=(--passphrase "$site_package_passphrase")
+  fi
+  "$install_dir/$binary_name" "${inspect_args[@]}"
+  echo "Restoring site package into $site_dir before first start..."
+  "$install_dir/$binary_name" "${restore_args[@]}"
+  echo "Site package restore completed. Rewriting managed runtime config for this server..."
 fi
 rm -f "$site_dir"/.env.bak.*
 write_env_file "$site_dir/.env.example" "$(cat <<EOF
@@ -850,7 +923,7 @@ else
   run_script="$site_dir/run-golapress.sh"
   loop_script="$site_dir/run-golapress-loop.sh"
   pid_file="$site_dir/data/golapress.pid"
-  cat > "$run_script" <<EOF
+  write_executable_file "$run_script" "$(cat <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -908,9 +981,9 @@ load_env_file "$site_dir/.env"
 load_env_file "$site_dir/data/runtime.env"
 exec "$install_dir/$binary_name"
 EOF
-  chmod 0755 "$run_script"
+)"
 
-  cat > "$loop_script" <<EOF
+  write_executable_file "$loop_script" "$(cat <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
 while true; do
@@ -923,7 +996,7 @@ while true; do
   sleep 5
 done
 EOF
-  chmod 0755 "$loop_script"
+)"
 
   stop_existing_background_process "$pid_file"
   launcher="$run_script"

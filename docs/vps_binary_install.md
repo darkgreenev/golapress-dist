@@ -27,6 +27,7 @@ The script:
 - writes a site `.env` file for non-secret launcher settings
 - writes real secrets such as `DB_DSN` and `ADMIN_PASSWORD` to `data/runtime.env`
 - writes Codex admin defaults to `data/admin.env`
+- can inspect and restore a site package before the first app start when you pass `--restore-site-package`
 - plugin repos can ship their own setup scripts for plugin-specific vendor credentials while internal Commerce trust uses the shared `GOLAP_CORE_TRUST_SECRET` in `data/runtime.env`
 - starts goLaPress with MySQL by default
 - can provision a MySQL database and application user when explicitly requested
@@ -52,6 +53,23 @@ bash install-vps.sh \
   --app-url https://example.com \
   --admin-password 'use-a-long-random-password' \
   --db-dsn 'golapress:change-me@tcp(127.0.0.1:3306)/golapress?parseTime=true&charset=utf8mb4,utf8'
+```
+
+For fresh-server restore from a portable site package:
+
+```bash
+bash install-vps.sh \
+  --site-dir /var/www/golapress \
+  --app-url https://example.com \
+  --db-driver mysql \
+  --db-dsn 'golapress:change-me@tcp(127.0.0.1:3306)/golapress?parseTime=true&charset=utf8mb4,utf8' \
+  --restore-site-package /root/golapress_site_YYYY-MM-DD_HHMMSS.tar.gz
+```
+
+For encrypted packages, add:
+
+```bash
+  --site-package-passphrase 'package-secret'
 ```
 
 ## Required Inputs
@@ -236,6 +254,18 @@ Create a database snapshot:
 golapress snapshot-site
 ```
 
+Create a portable full-site package for migration or fresh-server restore:
+
+```bash
+golapress package-site
+```
+
+Create an encrypted package:
+
+```bash
+golapress package-site --encrypt-passphrase 'package-secret'
+```
+
 Verify a backup artifact before restoring it:
 
 ```bash
@@ -245,7 +275,65 @@ golapress restore-check --file backups/sqlite/golapress_YYYY-MM-DD_HHMMSS.db.gz
 
 The restore check is non-destructive. It confirms the artifact is a readable gzip archive with a supported goLaPress database payload.
 
-For MySQL restores, import the verified SQL dump into the intended database:
+Inspect a site package before restoring it elsewhere:
+
+```bash
+golapress inspect-site-package --file backups/site-packages/golapress_site_YYYY-MM-DD_HHMMSS.tar.gz
+```
+
+For encrypted packages:
+
+```bash
+golapress inspect-site-package \
+  --file backups/site-packages/golapress_site_YYYY-MM-DD_HHMMSS.tar.gz.enc \
+  --passphrase 'package-secret'
+```
+
+For fresh-server restore, site packages are now the preferred path because they include the database backup plus selected site files:
+
+- `.env`
+- `.env.example`
+- `data/runtime.env`
+- `data/admin.env`
+- `data/media/`
+- `themes/`
+- `plugins/`
+
+Restore a full site package on the target server:
+
+```bash
+golapress restore-site-package \
+  --site-dir /var/www/golapress \
+  --file backups/site-packages/golapress_site_YYYY-MM-DD_HHMMSS.tar.gz \
+  --mode full \
+  --db-driver mysql \
+  --db-dsn 'golapress:change-me@tcp(127.0.0.1:3306)/golapress?parseTime=true&charset=utf8mb4,utf8'
+```
+
+For encrypted packages:
+
+```bash
+golapress restore-site-package \
+  --site-dir /var/www/golapress \
+  --file backups/site-packages/golapress_site_YYYY-MM-DD_HHMMSS.tar.gz.enc \
+  --mode full \
+  --db-driver mysql \
+  --db-dsn 'golapress:change-me@tcp(127.0.0.1:3306)/golapress?parseTime=true&charset=utf8mb4,utf8' \
+  --passphrase 'package-secret'
+```
+
+For SQLite targets:
+
+```bash
+golapress restore-site-package \
+  --site-dir /var/www/golapress \
+  --file backups/site-packages/golapress_site_YYYY-MM-DD_HHMMSS.tar.gz \
+  --mode full \
+  --db-driver sqlite \
+  --db-dsn 'file:/var/www/golapress/data/golapress.db?_foreign_keys=on'
+```
+
+For MySQL restores, you can either use the guided restore wizard in `Tools > Backups` or import the verified SQL dump into the intended database:
 
 ```bash
 gzip -dc /var/www/golapress/backups/mysql/golapress_YYYY-MM-DD_HHMMSS.sql.gz \
@@ -261,6 +349,9 @@ systemctl start golapress
 ```
 
 Database restore and filesystem restore are separate steps. Themes, plugins, uploads, and runtime env files should come from the site repo, storage snapshot, or external file backup.
+The browser restore wizard only handles the MySQL database import; filesystem restore still comes from the site repo, storage snapshot, or external file backup.
+Site packages also write a `.sha256` sidecar next to the archive; keep that file with the package and verify it before moving the archive to another server.
+If the source site is already running goLaPress, the admin UI under `Tools > Backups` can now drive this site-package flow over SSH with `Clone To Server`, including target validation and optional MySQL install/database provisioning for apt-based Linux hosts. It can also optionally install and configure Caddy on the target so the site is served on the public domain directly after deployment.
 
 The service runs the release binary and sets the runtime environment directly. The site-owned files remain under `--site-dir`.
 
