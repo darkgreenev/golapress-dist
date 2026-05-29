@@ -15,6 +15,7 @@ Current public docs:
 - [Binary Plugin Development](binary_plugin_development.html)
 - [Dist Release Workflow](dist_release_workflow.html)
 - [Hook Reference](hook_reference.html)
+- [glp-cli Reference](glp_cli_reference.html)
 - [Plugin Development](plugin_development.html)
 - [Plugin Development Workflow](plugin_development_workflow.html)
 - [Private Plugin Distribution](private_plugin_distribution.html)
