@@ -368,6 +368,8 @@ The service reads its runtime environment from:
 /var/www/golapress/data/runtime.env
 ```
 
+For VPS installs, `install-vps.sh` writes `APP_RUNTIME_MODE=installed` into the managed environment so the admin runtime page reports an installed app process instead of guessing from host container markers.
+
 Rerunning the installer rewrites `.env` and `data/runtime.env` atomically from the supplied flags. It does not create timestamped `.env.bak.*` copies, and it removes legacy `.env.bak.*` files left by older installer runs.
 
 The installer also generates and preserves `GOLAP_CORE_TRUST_SECRET` in `data/runtime.env`, so Commerce and trusted plugins can derive their internal signing keys without per-plugin secret copy/paste.
