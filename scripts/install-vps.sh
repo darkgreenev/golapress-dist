@@ -137,6 +137,28 @@ prompt_secret() {
   fi
 }
 
+prompt_secret_confirm() {
+  local label="$1"
+  local current="$2"
+  local input=""
+  local confirm=""
+
+  while true; do
+    input="$(prompt_secret "$label" "$current")"
+    if [ -z "$input" ] && [ -z "$current" ]; then
+      printf '%s' ""
+      return 0
+    fi
+    confirm="$(prompt_secret "Confirm $label" "$input")"
+    if [ "$input" = "$confirm" ]; then
+      printf '%s' "$input"
+      return 0
+    fi
+    print_prompt_line "Values did not match. Please try again."
+    current=""
+  done
+}
+
 prompt_yes_no() {
   local label="$1"
   local default="$2"
@@ -241,7 +263,7 @@ run_interactive_setup() {
   fi
   admin_email="$(prompt_value "Admin email" "$admin_email")"
   admin_display_name="$(prompt_value "Admin display name" "$admin_display_name")"
-  admin_password="$(prompt_secret "Admin password" "$admin_password")"
+  admin_password="$(prompt_secret_confirm "Admin password" "$admin_password")"
   db_driver="$(prompt_choice "Database driver" "$db_driver" mysql sqlite)"
 
   if [ "$db_driver" = "mysql" ]; then
@@ -252,7 +274,7 @@ run_interactive_setup() {
     mysql_create_db_choice="$(prompt_yes_no "Create MySQL database and user automatically" "$mysql_create_db_choice")"
     mysql_db_name="$(prompt_value "MySQL database name" "$mysql_db_name")"
     mysql_db_user="$(prompt_value "MySQL database user" "$mysql_db_user")"
-    mysql_db_password="$(prompt_secret "MySQL database password" "$mysql_db_password")"
+    mysql_db_password="$(prompt_secret_confirm "MySQL database password" "$mysql_db_password")"
     mysql_dsn_host="$(prompt_value "MySQL app host" "$mysql_dsn_host")"
     mysql_dsn_port="$(prompt_value "MySQL app port" "$mysql_dsn_port")"
 
@@ -261,7 +283,7 @@ run_interactive_setup() {
       mysql_root_user="$(prompt_value "MySQL root user" "$mysql_root_user")"
       mysql_root_host="$(prompt_value "MySQL root host" "$mysql_root_host")"
       mysql_root_port="$(prompt_value "MySQL root port" "$mysql_root_port")"
-      mysql_root_password="$(prompt_secret "MySQL root password" "$mysql_root_password")"
+      mysql_root_password="$(prompt_secret_confirm "MySQL root password" "$mysql_root_password")"
     else
       mysql_create_db=0
     fi
@@ -279,7 +301,7 @@ run_interactive_setup() {
   restore_package_choice="$(prompt_yes_no "Restore a site package before first start" "$restore_package_choice")"
   if [ "$restore_package_choice" = "true" ]; then
     restore_site_package="$(prompt_value "Site package path" "$restore_site_package")"
-    site_package_passphrase="$(prompt_secret "Site package passphrase (leave blank if not encrypted)" "$site_package_passphrase")"
+    site_package_passphrase="$(prompt_secret_confirm "Site package passphrase (leave blank if not encrypted)" "$site_package_passphrase")"
   else
     restore_site_package=""
     site_package_passphrase=""
@@ -365,6 +387,19 @@ load_dotenv() {
   done < "$env_file"
 }
 
+install_state_cache_file() {
+  local state_home="${XDG_STATE_HOME:-$HOME/.local/state}"
+  printf '%s/golapress/install.state' "$state_home"
+}
+
+load_install_state_cache() {
+  local state_file=""
+  state_file="$(install_state_cache_file)"
+  if [ -f "$state_file" ]; then
+    load_dotenv "$state_file"
+  fi
+}
+
 shell_quote() {
   printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"
 }
@@ -413,6 +448,62 @@ write_executable_file() {
   printf '%s' "$content" > "$tmp"
   chmod 0755 "$tmp" 2>/dev/null || true
   mv "$tmp" "$file"
+}
+
+write_site_readme() {
+  local file="$1"
+  local tmp=""
+  if [ -f "$file" ]; then
+    return
+  fi
+  mkdir -p "$(dirname "$file")"
+  tmp="${file}.tmp"
+  cat > "$tmp" <<'EOF'
+# goLaPress Site
+
+This directory is managed by the goLaPress installer.
+
+Public docs:
+- https://darkgreenev.github.io/golapress-dist
+
+Local files:
+- `.env`: non-secret launcher settings
+- `data/runtime.env`: managed secrets such as `DB_DSN` and `ADMIN_PASSWORD`
+- `data/admin.env`: Codex/admin UI settings
+- `backups/`: site backups
+
+Managed help:
+- `./run-golapress.sh`: start the site without systemd
+- `./run-golapress-loop.sh`: restart loop for non-systemd installs
+
+Do not commit `data/runtime.env` or `data/admin.env`.
+EOF
+  chmod 0644 "$tmp" 2>/dev/null || true
+  mv "$tmp" "$file"
+}
+
+save_install_state_cache() {
+  local state_file=""
+  state_file="$(install_state_cache_file)"
+  write_env_file "$state_file" "$(cat <<EOF
+INSTALL_LAST_SITE_DIR=$(shell_quote "$site_dir")
+INSTALL_LAST_APP_URL=$(shell_quote "$app_url")
+INSTALL_LAST_APP_PORT=$(shell_quote "$app_port")
+INSTALL_LAST_ADMIN_EMAIL=$(shell_quote "$admin_email")
+INSTALL_LAST_ADMIN_DISPLAY_NAME=$(shell_quote "$admin_display_name")
+INSTALL_LAST_DB_DRIVER=$(shell_quote "$db_driver")
+INSTALL_LAST_MYSQL_CREATE_DB=$(shell_quote "$mysql_create_db")
+INSTALL_LAST_MYSQL_DB_NAME=$(shell_quote "$mysql_db_name")
+INSTALL_LAST_MYSQL_DB_USER=$(shell_quote "$mysql_db_user")
+INSTALL_LAST_MYSQL_DSN_HOST=$(shell_quote "$mysql_dsn_host")
+INSTALL_LAST_MYSQL_DSN_PORT=$(shell_quote "$mysql_dsn_port")
+INSTALL_LAST_RESTORE_SITE_PACKAGE=$(shell_quote "$restore_site_package")
+INSTALL_LAST_RUNTIME_MODE=$(shell_quote "$runtime_mode")
+INSTALL_LAST_CODEX_ENABLED=$(shell_quote "$codex_enabled")
+INSTALL_LAST_FALLBACK_MODE=$(shell_quote "$fallback_mode")
+INSTALL_LAST_INSTALL_CODEX_REQUESTED=$(shell_quote "$install_codex_requested")
+EOF
+)"
 }
 
 stop_existing_background_process() {
@@ -539,8 +630,9 @@ provision_mysql() {
 }
 
 load_dotenv ".env"
+load_install_state_cache
 
-site_dir="${APP_SITE_DIR:-$PWD/golapress-site}"
+site_dir="${APP_SITE_DIR:-${INSTALL_LAST_SITE_DIR:-$PWD/golapress-site}}"
 if [ -n "${GOLAPRESS_INSTALL_DIR:-}" ]; then
   install_dir="$GOLAPRESS_INSTALL_DIR"
 elif [ "$(id -u)" -eq 0 ]; then
@@ -548,19 +640,19 @@ elif [ "$(id -u)" -eq 0 ]; then
 else
   install_dir="$HOME/.local/bin"
 fi
-app_url="${APP_URL:-http://localhost:8076}"
-db_driver="${DB_DRIVER:-mysql}"
+app_url="${APP_URL:-${INSTALL_LAST_APP_URL:-http://localhost:8076}}"
+db_driver="${DB_DRIVER:-${INSTALL_LAST_DB_DRIVER:-mysql}}"
 default_mysql_dsn="golapress:golapress@tcp(127.0.0.1:3306)/golapress?parseTime=true&charset=utf8mb4,utf8"
 db_dsn="${DB_DSN:-$default_mysql_dsn}"
-runtime_mode="${CODEX_RUNTIME:-auto}"
-fallback_mode="${GOLAPRESS_FALLBACK_MODE:-background}"
-codex_enabled="${CODEX_AI_ENABLED:-false}"
+runtime_mode="${CODEX_RUNTIME:-${INSTALL_LAST_RUNTIME_MODE:-auto}}"
+fallback_mode="${GOLAPRESS_FALLBACK_MODE:-${INSTALL_LAST_FALLBACK_MODE:-background}}"
+codex_enabled="${CODEX_AI_ENABLED:-${INSTALL_LAST_CODEX_ENABLED:-false}}"
 install_mode="${GOLAPRESS_INSTALL_MODE:-auto}"
 app_host="${APP_HOST:-0.0.0.0}"
-app_port="${APP_PORT:-8076}"
-admin_email="${ADMIN_EMAIL:-admin@example.com}"
+app_port="${APP_PORT:-${INSTALL_LAST_APP_PORT:-8076}}"
+admin_email="${ADMIN_EMAIL:-${INSTALL_LAST_ADMIN_EMAIL:-admin@example.com}}"
 admin_password="${ADMIN_PASSWORD:-change-me-in-real-deployments}"
-admin_display_name="${ADMIN_DISPLAY_NAME:-Admin}"
+admin_display_name="${ADMIN_DISPLAY_NAME:-${INSTALL_LAST_ADMIN_DISPLAY_NAME:-Admin}}"
 path_env="${PATH:-/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin}"
 service_name="golapress"
 latest_url_default="https://raw.githubusercontent.com/darkgreenev/golapress-dist/main/latest.json"
@@ -569,18 +661,18 @@ binary_file="${GOLAPRESS_BINARY_FILE:-}"
 release_arch="linux_amd64"
 use_systemd=0
 install_codex_requested=0
-mysql_create_db=0
+mysql_create_db="${MYSQL_CREATE_DB:-${INSTALL_LAST_MYSQL_CREATE_DB:-0}}"
 mysql_root_user="${MYSQL_ROOT_USER:-root}"
 mysql_root_password="${MYSQL_ROOT_PASSWORD:-}"
 mysql_root_host="${MYSQL_ROOT_HOST:-127.0.0.1}"
 mysql_root_port="${MYSQL_ROOT_PORT:-3306}"
 mysql_app_host="${MYSQL_APP_HOST:-127.0.0.1}"
-mysql_db_name="${MYSQL_DB_NAME:-}"
-mysql_db_user="${MYSQL_DB_USER:-}"
+mysql_db_name="${MYSQL_DB_NAME:-${INSTALL_LAST_MYSQL_DB_NAME:-}}"
+mysql_db_user="${MYSQL_DB_USER:-${INSTALL_LAST_MYSQL_DB_USER:-}}"
 mysql_db_password="${MYSQL_DB_PASSWORD:-}"
-mysql_dsn_host="${MYSQL_DSN_HOST:-127.0.0.1}"
-mysql_dsn_port="${MYSQL_DSN_PORT:-3306}"
-restore_site_package="${RESTORE_SITE_PACKAGE:-}"
+mysql_dsn_host="${MYSQL_DSN_HOST:-${INSTALL_LAST_MYSQL_DSN_HOST:-127.0.0.1}}"
+mysql_dsn_port="${MYSQL_DSN_PORT:-${INSTALL_LAST_MYSQL_DSN_PORT:-3306}}"
+restore_site_package="${RESTORE_SITE_PACKAGE:-${INSTALL_LAST_RESTORE_SITE_PACKAGE:-}}"
 site_package_passphrase="${SITE_PACKAGE_PASSPHRASE:-}"
 site_package_passphrase_file="${SITE_PACKAGE_PASSPHRASE_FILE:-}"
 interactive_requested=0
@@ -697,6 +789,13 @@ if [ "$interactive_requested" -eq 1 ]; then
   close_prompt_io
 fi
 
+if [ -z "$admin_password" ]; then
+  echo "Error: admin password is required." >&2
+  exit 1
+fi
+
+save_install_state_cache
+
 case "$fallback_mode" in
   background|loop)
     ;;
@@ -755,6 +854,8 @@ data/sessions/
 backups/
 EOF
 fi
+
+write_site_readme "$site_dir/README.md"
 
 mkdir -p "$site_dir/data"
 write_env_file "$site_dir/data/install.state" "$(cat <<EOF

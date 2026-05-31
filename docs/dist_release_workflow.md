@@ -90,6 +90,8 @@ Bootstrap metadata, mirrored public support files, and docs include things like:
 - `Dockerfile.withData`
 - mirrored installer scripts such as `run-standard.sh`, `run-with-data.sh`, and `install-vps.sh`
 - public install docs needed by the distribution repo
+- public plugin docs mirrored under `plugins-user-docs/<plugin-id>/`
+- a generated plugin docs landing page at `plugins-user-docs/index.html`
 - `latest.json`
 
 Binary artifacts include:
@@ -125,6 +127,8 @@ This is handled from the private repo with:
 ```
 
 That sync script copies the public distribution files plus the entire `user-docs/` folder into `golapress-dist/docs/`.
+It also copies selected plugin public docs from `plugins/<plugin>/user-docs/` into `golapress-dist/plugins-user-docs/<plugin-id>/`.
+The plugin docs tree always gets a generated `index.html` landing page in `golapress-dist/plugins-user-docs/`.
 
 - `.env.example`
 - `Dockerfile.withData`
@@ -292,6 +296,8 @@ Source-checkout development runs do not use this updater flow. In development/so
 ## Operational Notes
 
 - any file placed under `user-docs/` is treated as public and is mirrored into `golapress-dist/docs/`
+- any file placed under `plugins/<plugin>/user-docs/` is treated as public plugin documentation and is mirrored into `golapress-dist/plugins-user-docs/<plugin-id>/`
+- `plugins-user-docs/index.html` is generated automatically as the public landing page for all published plugin docs
 - `build-dist.sh` does not publish GitHub releases by itself. It prepares the release payload locally under `dist/release/`.
 - `latest.json` and the GitHub release assets must stay in sync.
 - Version strings passed to `build-dist.sh` become part of the generated release URLs.

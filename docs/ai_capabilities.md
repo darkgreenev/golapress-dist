@@ -4,7 +4,7 @@ This document describes the current built-in AI assistant surface in goLaPress, 
 
 ## What The Built-In Assistant Is
 
-The built-in assistant is a Codex-backed admin tool. It runs inside goLaPress admin and talks to the Codex CLI through the local or Docker runtime bridge.
+The built-in assistant is a multi-provider admin tool. It runs inside goLaPress admin and talks to CLI-backed providers through the local or Docker runtime bridge.
 
 It is intended to be:
 
@@ -15,18 +15,23 @@ It is intended to be:
 
 It is not intended to be an unrestricted system shell or a replacement for explicit admin workflows.
 
-## Supported Runtimes
+## Supported Providers And Runtimes
 
-goLaPress currently supports these Codex runtimes:
+goLaPress currently supports these assistant providers:
 
-- `local`: goLaPress launches the `codex` command on the host machine
-- `docker`: goLaPress talks to the separate Codex worker container
+- `Codex`
+- `Gemini`
+
+Each provider can use these runtimes:
+
+- `local`: goLaPress launches the selected provider CLI on the host machine
+- `docker`: goLaPress talks to the separate AI worker container
 
 For public non-Docker VPS installs, use `local`.
 
 ## Authentication Options
 
-The assistant can authenticate Codex in either of these ways:
+Codex can authenticate in either of these ways:
 
 - a saved OpenAI API key in `Settings > System`
 - an existing Codex CLI login for the same OS user that runs goLaPress
@@ -43,6 +48,12 @@ When goLaPress runs as `root` under a VPS install, use:
 sudo codex login
 ```
 
+Gemini currently uses API-key-first setup:
+
+- save a Gemini API key in `Settings > System`
+- choose `Gemini` as the default provider
+- start a new assistant chat
+
 ## Current Admin UI Capabilities
 
 Today the built-in assistant and adjacent AI features can reliably help with:
@@ -51,7 +62,7 @@ Today the built-in assistant and adjacent AI features can reliably help with:
 - theme import assistance
 - active theme fix workflows
 - guided recipe drafting for page-builder flows
-- operator guidance about Codex login and API-key setup
+- operator guidance about Codex login and provider-specific API-key setup
 
 The wider admin product surface that an AI agent can read, explain, and help operators navigate includes:
 
@@ -124,10 +135,16 @@ See:
 
 For a non-Docker VPS install:
 
-1. install `@openai/codex`
-2. run `sudo codex login` or save an API key in admin
-3. enable Codex in `Settings > System`
-4. choose runtime `Local`
-5. start a new assistant chat
+1. install the provider CLI you plan to use:
+   - `npm install -g @openai/codex`
+   - `npm install -g @google/gemini-cli`
+2. for Codex, run `sudo codex login` or save an OpenAI API key in admin
+3. for Gemini, save a Gemini API key in admin
+4. open `Settings > System`
+5. choose the default provider
+6. enable that provider and choose runtime `Local`
+7. start a new assistant chat
 
-If the assistant UI reports that Codex is unauthenticated, start a new chat after completing the login flow.
+If the assistant UI reports that Codex is unauthenticated, complete the login flow and start a new chat.
+
+If the assistant UI reports that Gemini is not ready, confirm the Gemini key is saved and that the `gemini` command is callable by the goLaPress process user.

@@ -28,12 +28,17 @@ Common environment variables:
 - `DB_DSN`
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
+- `AI_ASSISTANT_PROVIDER`
 - `CODEX_AI_ENABLED`
 - `CODEX_RUNTIME`
 - `CODEX_API_KEY`
 - `CODEX_MODEL`
+- `GEMINI_AI_ENABLED`
+- `GEMINI_RUNTIME`
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL`
 
-Operator-managed Codex settings are typically written to `data/admin.env`.
+Operator-managed assistant settings are typically written to `data/admin.env`.
 
 ## Public HTTP Routes
 
@@ -307,10 +312,26 @@ Current lifecycle hook names and payload shapes are documented in [Hook Referenc
 
 The built-in assistant depends on:
 
-- `CODEX_AI_ENABLED=true`
-- a supported runtime
-- `codex` being available on `PATH` for the goLaPress process user when using `local`
-- either a saved API key or a valid Codex CLI login
+- `AI_ASSISTANT_PROVIDER` being set to a supported provider or left at the default
+- provider-specific enablement and runtime settings in `data/admin.env`
+- the selected provider CLI being available on `PATH` for the goLaPress process user when using `local`
+
+Current assistant settings keys are:
+
+- `AI_ASSISTANT_PROVIDER`
+- `CODEX_AI_ENABLED`
+- `CODEX_RUNTIME`
+- `CODEX_API_KEY`
+- `CODEX_MODEL`
+- `GEMINI_AI_ENABLED`
+- `GEMINI_RUNTIME`
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL`
+
+Codex-specific auth options:
+
+- a saved OpenAI API key
+- a valid Codex CLI login
 
 For CLI login on current Codex releases, use:
 
@@ -323,3 +344,9 @@ On root-run VPS installs:
 ```bash
 sudo codex login
 ```
+
+Gemini-specific auth option:
+
+- a saved Gemini API key
+
+For current Gemini CLI releases, goLaPress passes the saved key as `GEMINI_API_KEY` when it starts a session.

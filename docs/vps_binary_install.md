@@ -19,6 +19,8 @@ The script:
 - is shipped as a versioned release asset in `golapress-dist`
 - downloads the latest Linux release binary from `golapress-dist` metadata
 - can ask interactive setup questions when you run it without flags in a terminal
+- remembers the last non-sensitive values it used in `~/.local/state/golapress/install.state` when available
+- asks password-style prompts twice in interactive mode so typos are caught before write-out
 - derives `APP_PORT` from the port in the interactive `App URL` when one is present
 - installs the binary, defaulting to `/usr/local/bin/golapress` for root installs and `$HOME/.local/bin/golapress` for non-root installs
 - defaults the site directory to `./golapress-site` under the current working directory unless you override `--site-dir`
@@ -27,6 +29,7 @@ The script:
 - writes a site `.env` file for non-secret launcher settings
 - writes real secrets such as `DB_DSN` and `ADMIN_PASSWORD` to `data/runtime.env`
 - writes Codex admin defaults to `data/admin.env`
+- writes a site-level `README.md` with operator help and a link to the public docs site
 - can inspect and restore a site package before the first app start when you pass `--restore-site-package`
 - plugin repos can ship their own setup scripts for plugin-specific vendor credentials while internal Commerce trust uses the shared `GOLAP_CORE_TRUST_SECRET` in `data/runtime.env`
 - starts goLaPress with MySQL by default
@@ -120,6 +123,9 @@ Configuration precedence is:
 2. exported shell environment variables
 3. `.env` in the current working directory
 4. built-in script defaults
+
+The installer also keeps a local convenience cache of the last non-sensitive interactive values, such as site directory, app URL, admin email, admin display name, database driver, and Codex/runtime choices. It does not store passwords or other secrets in that cache.
+That cache is only used to prefill prompts in the interactive wizard. It does not override explicit flags or environment variables.
 
 So if you keep most values in `.env`, you can still override one-off values with flags:
 
@@ -487,24 +493,27 @@ MySQL backups require `mysqldump` to be installed.
 
 ## Enabling The AI Assistant
 
-The AI Assistant in goLaPress wraps the Codex CLI. On a no-Docker VPS, use the `local` runtime.
+The AI Assistant in goLaPress supports Codex and Gemini. On a no-Docker VPS, use the `local` runtime.
 
-OpenAI's Codex CLI documentation says the CLI can be installed with `npm install -g @openai/codex`, and current releases use `codex login` for the ChatGPT sign-in flow. goLaPress can also pass a saved OpenAI API key to Codex as `OPENAI_API_KEY` when it launches a session.
+Codex can use a saved OpenAI API key or a Codex CLI login. Gemini is API-key-first in the current admin product.
 
 References:
 
 - https://help.openai.com/en/articles/11096431-openai-codex-cli-getting-started
 - https://help.openai.com/en/articles/11381614
+- https://github.com/google-gemini/gemini-cli/blob/main/docs/get-started/authentication.md
+- https://github.com/google-gemini/gemini-cli/blob/main/docs/reference/configuration.md
 
-### 1. Install Node.js And Codex CLI
+### 1. Install Node.js And The Provider CLI
 
-Install Node.js using your VPS operating system package manager or NodeSource. Then install Codex CLI:
+Install Node.js using your VPS operating system package manager or NodeSource. Then install the CLI you plan to use:
 
 ```bash
 npm install -g @openai/codex
+npm install -g @google/gemini-cli
 ```
 
-The installer can do this for you when requested:
+The installer can install Codex for you when requested:
 
 ```bash
 ./install-vps.sh \
@@ -532,14 +541,16 @@ OpenAI's Codex CLI setup documentation also supports updating with:
 codex --upgrade
 ```
 
-Confirm the `codex` command is visible to the same OS user that runs goLaPress:
+Confirm the provider command is visible to the same OS user that runs goLaPress:
 
 ```bash
 which codex
 codex --help
+which gemini
+gemini --help
 ```
 
-This matters because goLaPress checks for a `codex` executable on the process `PATH`.
+This matters because goLaPress checks for the selected provider executable on the process `PATH`.
 
 ### 2. Install Or Restart goLaPress With Local Runtime Enabled
 
@@ -566,44 +577,56 @@ Log in to:
 https://example.com/admin
 ```
 
-Open `Settings > System`, then in the `Codex AI` section:
+Open `Settings > System`, then:
 
-- check `Enable Codex assistant`
-- choose runtime `Local`
-- choose a model or leave `Codex default`
-- enter an OpenAI API key
-- save the Codex settings
+- choose the `Default Provider`
+- in the `Codex` section:
+  - check `Enable Codex assistant` if you want Codex available
+  - choose runtime `Local`
+  - choose a model or leave the default
+  - enter an OpenAI API key if you are not using `codex login`
+- in the `Gemini` section:
+  - check `Enable Gemini assistant` if you want Gemini available
+  - choose runtime `Local`
+  - choose a model or leave the default
+  - enter a Gemini API key
+- save the assistant settings
 
-The app stores Codex settings in:
+The app stores assistant settings in:
 
 ```text
 /var/www/golapress/data/admin.env
 ```
 
-The assistant passes the saved API key to Codex as `OPENAI_API_KEY` when it runs.
+The assistant passes the saved Codex key to Codex as `OPENAI_API_KEY` when it runs.
 
-Because `data/admin.env` is the admin-managed settings file, the VPS service does not export `CODEX_AI_ENABLED` or `CODEX_RUNTIME` from `.env`. That keeps the admin UI able to change Codex settings later.
+The assistant passes the saved Gemini key to Gemini as `GEMINI_API_KEY` when it runs.
+
+Because `data/admin.env` is the admin-managed settings file, the VPS service does not export assistant provider/runtime keys from `.env`. That keeps the admin UI able to change assistant settings later.
 
 ### 4. Confirm The Assistant Is Ready
 
 The assistant is ready when all of these are true:
 
-- `CODEX_AI_ENABLED=true`
-- `CODEX_RUNTIME=local` or `auto`
-- `codex` is on `PATH` for the goLaPress process user
-- the OpenAI API key is saved in admin settings or available in the environment, or Codex CLI is already logged in for the goLaPress OS user
+- `AI_ASSISTANT_PROVIDER` points at the provider you want for new chats
+- the selected provider is enabled in `data/admin.env`
+- the selected provider runtime is `local` or `auto`
+- the selected provider CLI is on `PATH` for the goLaPress process user
+- for Codex:
+  - the OpenAI API key is saved in admin settings or available in the environment
+  - or Codex CLI is already logged in for the goLaPress OS user
+- for Gemini:
+  - the Gemini API key is saved in admin settings
 
-If the admin screen says:
-
-```text
-AI Assistant is not ready. Enable Codex AI and choose a supported runtime in General settings.
-```
+If the admin screen reports that the assistant is not ready,
 
 check:
 
 ```bash
 which codex
 codex --help
+which gemini
+gemini --help
 systemctl status golapress
 journalctl -u golapress -f
 ```
@@ -642,7 +665,7 @@ Opt in to SQLite:
 
 ### VPS With AI Assistant
 
-Install Codex CLI first, or let the installer do it with `--install-codex`, then install with:
+Install the provider CLI first, or let the installer do it for Codex with `--install-codex`, then install with:
 
 ```bash
 ./install-vps.sh \
@@ -655,7 +678,7 @@ Install Codex CLI first, or let the installer do it with `--install-codex`, then
   --install-codex
 ```
 
-Then save the OpenAI API key from `Settings > System`.
+Then open `Settings > System`, choose the default provider, and save the provider-specific API key if required.
 
 ### VPS Behind Nginx
 
@@ -723,6 +746,8 @@ Check:
 ```bash
 which codex
 codex --help
+which gemini
+gemini --help
 ```
 
-If `codex` works in your shell but not in goLaPress, the service user likely has a different `PATH`. Install Codex globally or adjust the service environment so the `codex` binary is visible to the goLaPress process.
+If the provider CLI works in your shell but not in goLaPress, the service user likely has a different `PATH`. Install the CLI globally or adjust the service environment so the selected provider binary is visible to the goLaPress process.
