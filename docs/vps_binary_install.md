@@ -30,6 +30,7 @@ The script:
 - writes real secrets such as `DB_DSN` and `ADMIN_PASSWORD` to `data/runtime.env`
 - writes Codex admin defaults to `data/admin.env`
 - writes a site-level `README.md` with operator help and a link to the public docs site
+- writes site-level `AGENTS.md` and `gemini.md` instruction files when they do not already exist
 - can inspect and restore a site package before the first app start when you pass `--restore-site-package`
 - plugin repos can ship their own setup scripts for plugin-specific vendor credentials while internal Commerce trust uses the shared `GOLAP_CORE_TRUST_SECRET` in `data/runtime.env`
 - starts goLaPress with MySQL by default
@@ -126,6 +127,8 @@ Configuration precedence is:
 
 The installer also keeps a local convenience cache of the last non-sensitive interactive values, such as site directory, app URL, admin email, admin display name, database driver, and Codex/runtime choices. It does not store passwords or other secrets in that cache.
 That cache is only used to prefill prompts in the interactive wizard. It does not override explicit flags or environment variables.
+
+On fresh installs and upgrades, the installer seeds `AGENTS.md` and `gemini.md` at the site root if they are missing. It does not overwrite existing copies, so local site-specific edits are preserved.
 
 So if you keep most values in `.env`, you can still override one-off values with flags:
 

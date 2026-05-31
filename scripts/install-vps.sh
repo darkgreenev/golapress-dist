@@ -470,6 +470,8 @@ Local files:
 - `.env`: non-secret launcher settings
 - `data/runtime.env`: managed secrets such as `DB_DSN` and `ADMIN_PASSWORD`
 - `data/admin.env`: Codex/admin UI settings
+- `AGENTS.md`: local AI agent instructions for this site checkout
+- `gemini.md`: Gemini-specific pointer to `AGENTS.md`
 - `backups/`: site backups
 
 Managed help:
@@ -478,6 +480,21 @@ Managed help:
 
 Do not commit `data/runtime.env` or `data/admin.env`.
 EOF
+  chmod 0644 "$tmp" 2>/dev/null || true
+  mv "$tmp" "$file"
+}
+
+write_file_if_missing() {
+  local file="$1"
+  local content="$2"
+  local tmp=""
+
+  if [ -e "$file" ]; then
+    return
+  fi
+  mkdir -p "$(dirname "$file")"
+  tmp="${file}.tmp"
+  printf '%s' "$content" > "$tmp"
   chmod 0644 "$tmp" 2>/dev/null || true
   mv "$tmp" "$file"
 }
@@ -856,6 +873,53 @@ EOF
 fi
 
 write_site_readme "$site_dir/README.md"
+write_file_if_missing "$site_dir/AGENTS.md" "$(cat <<'EOF'
+# goLaPress Agent Instructions
+
+This site is used by both humans and AI agents. Follow these rules before making changes.
+
+## First Read
+
+Read the public docs and the local strategy docs before editing anything:
+
+- `user-docs/README.md`
+- `user-docs/ai_agent_playbook.md`
+- `user-docs/ai_capabilities.md`
+- `user-docs/api_and_contracts.md`
+- `user-docs/glp_cli_reference.md`
+- `user-docs/vps_binary_install.md`
+- `docs/ai_agent_strategy.md`
+
+If the task touches a plugin or theme, read that package's public docs too.
+
+If you are working against a release site or a public install, start by opening the canonical docs site:
+
+- https://darkgreenev.github.io/golapress-dist/
+
+## Working Rules
+
+- Prefer documented admin flows, core services, hooks, and bounded CLI commands.
+- Do not invent routes, env vars, tables, or contracts.
+- Do not use raw SQL or direct file writes for user content unless the docs explicitly allow it.
+- Verify behavior with tests, screenshots, or live checks when the task affects UI or runtime behavior.
+- Keep changes small and match the existing WordPress-like admin conventions unless the task explicitly asks for a redesign.
+
+## AI Assistant Work
+
+- Treat the public docs as the contract for what the CMS supports.
+- When a feature is unclear, inspect the code and tests before guessing.
+- Prefer fixing the implementation and the docs together when behavior changes.
+- If a change needs release-visible guidance, update `user-docs/` as part of the same work.
+EOF
+)"
+write_file_if_missing "$site_dir/gemini.md" "$(cat <<'EOF'
+# Gemini Agent Pointer
+
+This site uses [AGENTS.md](AGENTS.md) as the canonical instruction file for AI agents.
+
+Read it first, then follow the public agent playbook at [user-docs/ai_agent_playbook.md](user-docs/ai_agent_playbook.md) and the relevant docs for the task.
+EOF
+)"
 
 mkdir -p "$site_dir/data"
 write_env_file "$site_dir/data/install.state" "$(cat <<EOF
