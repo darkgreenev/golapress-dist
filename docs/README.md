@@ -4,6 +4,8 @@ Files in this folder are public distribution docs.
 
 If you are new to goLaPress, start with the overview pages below. If you are building on the platform, move on to the technical references and implementation guides.
 
+AI agents and automated operators should start with [AI Agent Playbook](ai_agent_playbook.html) before touching the CMS.
+
 Rules:
 
 - anything here is mirrored into `golapress-dist/docs/`
@@ -17,6 +19,7 @@ Current public docs:
 - [What Is goLaPress?](what_is_golapress.html)
 - [Use Cases](use_cases.html)
 - [Why goLaPress?](why_golapress.html)
+- [AI Agent Playbook](ai_agent_playbook.html)
 - [AI Capabilities](ai_capabilities.html)
 - [API And Contracts](api_and_contracts.html)
 - [Binary Plugin Development](binary_plugin_development.html)
