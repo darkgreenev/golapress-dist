@@ -59,6 +59,7 @@ Gemini currently uses API-key-first setup:
 Today the built-in assistant and adjacent AI features can reliably help with:
 
 - AI chat in admin
+- prompt attachments through file upload, drag-and-drop, and clipboard image paste
 - theme import assistance
 - active theme fix workflows
 - guided recipe drafting for page-builder flows
