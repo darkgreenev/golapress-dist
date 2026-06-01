@@ -29,5 +29,6 @@ Current public docs:
 - [Plugin Development](plugin_development.html)
 - [Plugin Development Workflow](plugin_development_workflow.html)
 - [Private Plugin Distribution](private_plugin_distribution.html)
+- [Restart And Reload](restart_and_reload.html)
 - [Theme Development](theme_development.html)
 - [VPS Binary Install](vps_binary_install.html)
