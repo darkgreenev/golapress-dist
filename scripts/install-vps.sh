@@ -859,18 +859,40 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir -p "$site_dir"/data/media "$site_dir"/themes "$site_dir"/plugins
-if [ ! -f "$site_dir/.gitignore" ]; then
-  cat > "$site_dir/.gitignore" <<'EOF'
-data/*.db
-data/*.sqlite
-data/*.sqlite3
-data/admin.env
-data/ai_*.json
-data/*.log
-data/sessions/
-backups/
-EOF
-fi
+ensure_site_gitignore() {
+  local file="$1"
+  local required=(
+    ".env"
+    ".env.*"
+    "data/*.db"
+    "data/*.sqlite"
+    "data/*.sqlite3"
+    "data/admin.env"
+    "data/runtime.env"
+    "data/ai_*.json"
+    "data/*.log"
+    "data/sessions/"
+    "backups/"
+  )
+  local existing=""
+  local line=""
+  local updated=0
+  mkdir -p "$(dirname "$file")"
+  touch "$file"
+  existing="$(cat "$file")"
+  for line in "${required[@]}"; do
+    if printf '%s\n' "$existing" | grep -Fxq "$line"; then
+      continue
+    fi
+    printf '%s\n' "$line" >> "$file"
+    updated=1
+  done
+  if [ "$updated" -eq 1 ]; then
+    :
+  fi
+}
+
+ensure_site_gitignore "$site_dir/.gitignore"
 
 write_site_readme "$site_dir/README.md"
 write_file_if_missing "$site_dir/AGENTS.md" "$(cat <<'EOF'

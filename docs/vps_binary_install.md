@@ -31,6 +31,7 @@ The script:
 - writes Codex admin defaults to `data/admin.env`
 - writes a site-level `README.md` with operator help and a link to the public docs site
 - writes site-level `AGENTS.md` and `gemini.md` instruction files when they do not already exist
+- seeds or updates the site `.gitignore` so `.env`, `data/runtime.env`, `data/admin.env`, logs, sessions, backups, and other runtime artifacts stay out of Git
 - can inspect and restore a site package before the first app start when you pass `--restore-site-package`
 - plugin repos can ship their own setup scripts for plugin-specific vendor credentials while internal Commerce trust uses the shared `GOLAP_CORE_TRUST_SECRET` in `data/runtime.env`
 - starts goLaPress with MySQL by default
@@ -129,6 +130,7 @@ The installer also keeps a local convenience cache of the last non-sensitive int
 That cache is only used to prefill prompts in the interactive wizard. It does not override explicit flags or environment variables.
 
 On fresh installs and upgrades, the installer seeds `AGENTS.md` and `gemini.md` at the site root if they are missing. It does not overwrite existing copies, so local site-specific edits are preserved.
+The same rule applies to the site `.gitignore`: the installer adds the required ignore entries when they are missing, but it does not replace the file wholesale, so any local custom ignore rules stay intact.
 
 So if you keep most values in `.env`, you can still override one-off values with flags:
 
@@ -595,7 +597,10 @@ Open `Settings > System`, then:
   - choose runtime `Local`
   - choose a model or leave the default
   - enter a Gemini API key
-- save the assistant settings
+- in the `Admin Shell Background` section:
+  - choose a media-library image for the admin shell and login screen
+  - pick an overlay strength to keep forms and notices readable
+- save the settings
 
 The app stores assistant settings in:
 
