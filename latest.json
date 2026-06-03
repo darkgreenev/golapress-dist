@@ -1,10 +1,10 @@
 {
-  "checksums": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.76/checksums.txt",
-  "install_vps": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.76/install-vps.sh",
-  "linux_amd64": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.76/golapress-linux-amd64.tar.gz",
-  "linux_arm64": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.76/golapress-linux-arm64.tar.gz",
-  "run_standard": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.76/run-standard.sh",
-  "run_with_data": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.76/run-with-data.sh",
-  "version": "v0.1.76",
-  "windows_amd64": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.76/golapress-windows-amd64.zip"
+  "checksums": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.77/checksums.txt",
+  "install_vps": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.77/install-vps.sh",
+  "linux_amd64": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.77/golapress-linux-amd64.tar.gz",
+  "linux_arm64": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.77/golapress-linux-arm64.tar.gz",
+  "run_standard": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.77/run-standard.sh",
+  "run_with_data": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.77/run-with-data.sh",
+  "version": "v0.1.77",
+  "windows_amd64": "https://github.com/darkgreenev/golapress-dist/releases/download/v0.1.77/golapress-windows-amd64.zip"
 }
