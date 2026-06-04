@@ -306,6 +306,7 @@ For fresh-server restore, site packages are now the preferred path because they 
 - `.env.example`
 - `data/runtime.env`
 - `data/admin.env`
+- `data/site.json`
 - `data/media/`
 - `themes/`
 - `plugins/`
@@ -435,6 +436,7 @@ The site directory is intentionally separate from the binary:
   data/
     admin.env
     runtime.env
+    site.json
     media/
     golapress.db
     golapress.log
