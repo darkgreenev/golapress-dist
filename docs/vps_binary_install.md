@@ -311,6 +311,8 @@ For fresh-server restore, site packages are now the preferred path because they 
 - `themes/`
 - `plugins/`
 
+In the admin backup clone wizard, use saved clone targets when you repeatedly deploy to the same server. Saved clone targets keep only non-sensitive values such as host, SSH user, site directory, app URL, database mode, MySQL database name/user, and Caddy/MySQL provisioning choices. SSH passwords, target admin passwords, MySQL passwords, and raw MySQL DSNs are not stored; enter those per clone run.
+
 Restore a full site package on the target server:
 
 ```bash
